@@ -68,7 +68,7 @@
     .sticky-col-3 { position: sticky; left: 205px; z-index: 20; }
     .sticky-col-4 { position: sticky; left: 270px; z-index: 20; }
 
-    /* 行ホバー時のハイライト強化（左端の品目名・固定列まで漏れなく濃いめブルーでハイライト） */
+    /* 行ホバー時のハイライト強化 */
     #tableBody tr:hover td {
       background-color: #dbeafe !important;
     }
@@ -190,7 +190,7 @@
     </div>
   </header>
 
-  <!-- 2. サマリーバー（KPIカード格納・開閉対応） -->
+  <!-- 2. サマリーバー（KPIカード格納・開閉対応、初期状態で格納） -->
   <div id="kpiBar" class="px-4 py-2 transition-all duration-200 border-b border-slate-300 bg-slate-100/90">
     <div class="flex items-center justify-between mb-1.5">
       <div id="kpiCompactSummary" class="text-xs font-bold text-slate-700 flex items-center gap-4 flex-wrap">
@@ -326,7 +326,7 @@
     </div>
   </main>
 
-  <!-- 5. 実在庫CSV取込モーダル -->
+  <!-- 5. 実在庫CSV取込モーダル（余計な注記・ルール枠を排除したクリーン構成） -->
   <div id="stockCsvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
@@ -339,15 +339,8 @@
       
       <div class="p-4 space-y-3 text-xs">
         <p class="text-slate-600 leading-relaxed">
-          基幹システム等から出力した「<span class="font-bold text-cyan-800">在庫報告書(日付指定).csv</span>」を指定してください。<br>
-          <span class="text-cyan-700 font-bold">※全倉庫（東側・西側・各工場等）の「ケース」数を品目ごとに自動合算し、現在表示中の月（<span id="stockModalTargetMonth" class="underline font-black"></span>）の月初実在庫として確定上書きします。</span>
+          基幹システム等から出力した「<span class="font-bold text-cyan-800">在庫報告書(日付指定).csv</span>」を指定してください。
         </p>
-
-        <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-2.5 text-[11px] text-cyan-900">
-          <div class="font-bold mb-0.5 text-cyan-800">月初確定ルール：</div>
-          <div>当月はCSVの実在庫数でピタッと固定され、翌月以降は前月末残数が「仮在庫」として自動的にスライドします。</div>
-          <div class="text-[10px] text-cyan-700 mt-1">※全角文字・Shift-JIS / UTF-8 を自動判別して合算します。</div>
-        </div>
 
         <div>
           <label class="block font-bold text-slate-700 mb-1">在庫報告書CSVファイルを選択</label>
@@ -375,7 +368,7 @@
     </div>
   </div>
 
-  <!-- 6. 出庫CSV取込モーダル -->
+  <!-- 6. 出庫CSV取込モーダル（注記・ルール枠・テスト用サンプルリンクを完全撤去） -->
   <div id="csvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
@@ -388,15 +381,8 @@
       
       <div class="p-4 space-y-3 text-xs">
         <p class="text-slate-600 leading-relaxed">
-          基幹システム等から出力した「出庫実績CSV」を指定してください。<br>
-          <span class="text-teal-700 font-bold">※取り込みを実行すると、既存の古い出庫数を自動でゼロクリアしてから最新データで上書きします（再取り込み時も重複しません）。</span>
+          基幹システム等から出力した「出庫実績CSV」を指定してください。
         </p>
-
-        <div class="bg-teal-50 border border-teal-200 rounded-lg p-2.5 text-[11px] text-teal-900">
-          <div class="font-bold mb-0.5 text-teal-800">自動反映ルール：</div>
-          <div>CSV内の「ケース数1」「ケース数2」…の数値を、そのまま該当日の出庫数（橙セル）へ反映します。</div>
-          <div class="text-[10px] text-teal-600 mt-1">※全角文字・全角数字・Shift-JIS / UTF-8 を自動判別します。</div>
-        </div>
 
         <div>
           <label class="block font-bold text-slate-700 mb-1">CSVファイルを選択</label>
@@ -415,16 +401,11 @@
         </div>
       </div>
 
-      <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-between border-t border-slate-200">
-        <button id="btnLoadSampleCsv" class="text-[11px] text-teal-700 underline font-semibold hover:text-teal-900">
-          テスト用サンプルデータ流し込み (10月度)
+      <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-end space-x-2 border-t border-slate-200">
+        <button id="btnCancelCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
+        <button id="btnApplyCsvData" class="px-3.5 py-1.5 rounded bg-teal-600 hover:bg-teal-500 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>
+          この内容で画面に反映 (上書き)
         </button>
-        <div class="flex items-center space-x-2">
-          <button id="btnCancelCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
-          <button id="btnApplyCsvData" class="px-3.5 py-1.5 rounded bg-teal-600 hover:bg-teal-500 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>
-            この内容で画面に反映 (上書き)
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -501,7 +482,7 @@
           }
         });
       } else {
-        // 未確定（翌月など）：直前の月の月末残数または基準在庫からの引き継ぎ
+        // 未確定（翌月など）：基準在庫または直前の月の月末残数からの引き継ぎ
         APP_STATE.products.forEach(p => {
           let baseStock = p.masterInitStock;
           p.initStock = baseStock;
@@ -1142,7 +1123,6 @@
       const previewArea = document.getElementById('stockCsvPreviewArea');
       const previewList = document.getElementById('stockCsvPreviewList');
       const matchCount = document.getElementById('stockCsvMatchCount');
-      const modalMonth = document.getElementById('stockModalTargetMonth');
 
       document.getElementById('btnOpenStockCsvModal').addEventListener('click', () => {
         modal.classList.remove('hidden');
@@ -1150,7 +1130,6 @@
         btnApply.disabled = true;
         previewArea.classList.add('hidden');
         APP_STATE.parsedStockCsvResult = null;
-        modalMonth.textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
       });
 
       const closeModal = () => modal.classList.add('hidden');
@@ -1470,41 +1449,6 @@
           showToast(`${APP_STATE.parsedCsvResult.length}品目の出庫データを画面に反映しました（プレビュー）`);
         }
       });
-
-      document.getElementById('btnLoadSampleCsv').addEventListener('click', function() {
-        const sampleRecords = [
-          { productId: 1, dailyCases: { 1: 568, 2: 410, 3: 322, 5: 493, 6: 185, 7: 447, 8: 507, 9: 440, 10: 371, 12: 20, 13: 346, 14: 428, 15: 592, 16: 439, 17: 359, 19: 276, 20: 82, 21: 30 } },
-          { productId: 2, dailyCases: { 2: 1, 6: 1, 7: 1, 8: 6, 9: 2, 13: 6, 16: 3 } },
-          { productId: 3, dailyCases: { 1: 7, 2: 19, 3: 6, 5: 42, 6: 13, 7: 53, 8: 10, 9: 39, 10: 17, 12: 1, 13: 17, 14: 4, 15: 15, 16: 19, 17: 5, 19: 14, 20: 10 } },
-          { productId: 4, dailyCases: { 1: 112, 2: 28, 3: 7, 5: 22, 6: 26, 7: 46, 8: 8, 9: 12, 10: 7, 12: 2, 13: 252, 14: 78, 15: 23, 16: 42, 17: 8, 19: 7, 20: 36 } },
-          { productId: 5, dailyCases: { 1: 140, 2: 20, 5: 40, 7: 20, 8: 144, 9: 80, 13: 1400, 14: 20, 15: 142, 16: 20, 20: 36, 21: 30 } },
-          { productId: 7, dailyCases: { 9: 960 } },
-          { productId: 8, dailyCases: { 1: 42, 2: 75, 3: 6, 5: 256, 6: 94, 7: 41, 8: 38, 9: 49, 10: 2, 13: 217, 14: 68, 15: 86, 16: 229, 19: 134, 20: 44 } },
-          { productId: 9, dailyCases: { 1: 981, 3: 10, 5: 99, 6: 55, 7: 2, 8: 85, 9: 160, 10: 2, 13: 699, 14: 55, 15: 51, 16: 631, 19: 1, 20: 321, 21: 55 } }
-        ];
-
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            if (APP_STATE.matrix[p.id] && APP_STATE.matrix[p.id][d]) {
-              APP_STATE.matrix[p.id][d].out = 0;
-            }
-          }
-        });
-
-        sampleRecords.forEach(s => {
-          Object.keys(s.dailyCases).forEach(d => {
-            if (APP_STATE.matrix[s.productId]?.[d]) {
-              APP_STATE.matrix[s.productId][d].out = s.dailyCases[d];
-            }
-          });
-        });
-
-        APP_STATE.currentPeriod = 'all';
-        renderPeriodTabs();
-        renderTable();
-        closeModal();
-        showToast('10月度のサンプル出庫データを反映しました');
-      });
     }
 
     // ==========================================
@@ -1664,7 +1608,6 @@
               renderTable();
               showToast(`${APP_STATE.year}年${APP_STATE.month}月のデータをシートから取得しました`);
             } else {
-              // サーバー側でエラーが返っても品目欄を消さず必ず初期マスタで描画
               console.warn('GAS Fetch warning:', res ? res.message : 'Unknown response');
               updateInitialStocksForCurrentMonth();
               renderPeriodTabs();
@@ -1883,3 +1826,4 @@
   </script>
 </body>
 </html>
+```
