@@ -4,25 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>製造計画・入出庫管理システム</title>
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <!-- Google Fonts: Inter & Noto Sans JP -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
   <style>
     body {
       font-family: 'Inter', 'Noto Sans JP', sans-serif;
-      -webkit-font-smoothing: antialiased;
     }
-    /* 数値入力欄のスピンボタン（▲▼）を完全非表示 */
-    input[type=number]::-webkit-inner-spin-button, 
-    input[type=number]::-webkit-outer-spin-button { 
-      -webkit-appearance: none; 
-      margin: 0; 
+
+    /* 数値入力欄のスピンボタン（▲▼矢印）を非表示化 */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
-    input[type=number] {
+    input[type="number"] {
       -moz-appearance: textfield;
     }
 
@@ -32,345 +34,332 @@
       height: 7px;
     }
     ::-webkit-scrollbar-track {
-      background: #f1f5f9;
+      background: #cbd5e1;
     }
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: #94a3b8;
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: #64748b;
     }
 
-    /* テーブル固定列スタイル */
+    /* テーブルヘッダー＆固定列の sticky スタイル（隙間をゼロにして密着固定） */
+    .th-date-header {
+      position: sticky;
+      top: 0;
+      z-index: 32;
+      height: 28px;
+    }
+    .th-sub-header {
+      position: sticky;
+      top: 28px;
+      z-index: 31;
+      height: 24px;
+    }
+
+    .sticky-corner-1 { position: sticky; top: 0; left: 0; z-index: 45; }
+    .sticky-corner-2 { position: sticky; top: 0; left: 140px; z-index: 45; }
+    .sticky-corner-3 { position: sticky; top: 0; left: 205px; z-index: 45; }
+    .sticky-corner-4 { position: sticky; top: 0; left: 270px; z-index: 45; }
+
     .sticky-col-1 { position: sticky; left: 0; z-index: 20; }
     .sticky-col-2 { position: sticky; left: 140px; z-index: 20; }
     .sticky-col-3 { position: sticky; left: 205px; z-index: 20; }
     .sticky-col-4 { position: sticky; left: 270px; z-index: 20; }
 
-    .sticky-header-row-1 { position: sticky; top: 0; z-index: 30; }
-    .sticky-header-row-2 { position: sticky; top: 38px; z-index: 30; }
-
-    .sticky-corner-1 { position: sticky; top: 0; left: 0; z-index: 40; }
-    .sticky-corner-2 { position: sticky; top: 0; left: 140px; z-index: 40; }
-    .sticky-corner-3 { position: sticky; top: 0; left: 205px; z-index: 40; }
-    .sticky-corner-4 { position: sticky; top: 0; left: 270px; z-index: 40; }
-
-    .sticky-corner-sub-1 { position: sticky; top: 38px; left: 0; z-index: 40; }
-    .sticky-corner-sub-2 { position: sticky; top: 38px; left: 140px; z-index: 40; }
-    .sticky-corner-sub-3 { position: sticky; top: 38px; left: 205px; z-index: 40; }
-    .sticky-corner-sub-4 { position: sticky; top: 38px; left: 270px; z-index: 40; }
+    /* 行ホバー時のハイライト強化（左端の品目名・固定列まで漏れなく濃いめのブルーでハイライト） */
+    #tableBody tr:hover td {
+      background-color: #dbeafe !important;
+    }
+    #tableBody tr:hover td.sticky-col-1,
+    #tableBody tr:hover td.sticky-col-2,
+    #tableBody tr:hover td.sticky-col-3,
+    #tableBody tr:hover td.sticky-col-4 {
+      background-color: #bfdbfe !important;
+    }
 
     /* KPI上部固定時のスタイル */
-    .kpi-pinned {
+    #kpiBar.fixed-pinned {
       position: sticky;
       top: 52px;
       z-index: 25;
-      background: rgba(248, 250, 252, 0.95);
+      background: rgba(248, 250, 252, 0.98);
       backdrop-filter: blur(8px);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border-bottom: 1px solid #cbd5e1;
     }
 
-    /* アニメーション */
-    @keyframes highlightRow {
-      0% { background-color: #fef08a; }
-      100% { background-color: transparent; }
+    /* 印刷時のスタイル定義（A4横・週次製造予定表） */
+    @media print {
+      @page {
+        size: landscape;
+        margin: 8mm;
+      }
+      header, #kpiBar, #periodTabs, button, #alertBanner, #inputAssistTooltip, #toast, #csvModal {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      main {
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      .print-header {
+        display: block !important;
+      }
     }
-    .highlight-flash {
-      animation: highlightRow 1.2s ease-out;
+    .print-header {
+      display: none;
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-200/80 text-slate-800 antialiased min-h-screen flex flex-col">
 
   <!-- 1. メインヘッダーバー -->
-  <header class="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between shadow-md sticky top-0 z-50">
-    <div class="flex items-center gap-3">
-      <div class="bg-blue-600 p-1.5 rounded-lg text-white shadow-sm flex items-center justify-center">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-        </svg>
+  <header class="bg-slate-900 text-white px-4 py-2 flex flex-wrap items-center justify-between gap-3 shadow-md sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="bg-blue-600 text-white p-1.5 rounded-lg shadow">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
       </div>
       <div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-base font-bold tracking-tight">製造計画・入出庫管理システム</h1>
-          <span id="envBadge" class="bg-slate-800 text-slate-300 text-[10px] font-medium px-2 py-0.5 rounded border border-slate-700 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>プレビューモード
-          </span>
-        </div>
-        <p class="text-[11px] text-slate-400 hidden sm:block">日別製造割り振りと出庫欠品シミュレーション</p>
+        <h1 class="font-extrabold text-sm sm:text-base tracking-wide flex items-center gap-2">
+          製造計画・入出庫管理システム
+        </h1>
+        <p class="text-[10px] text-slate-400">日別製造割り振りと出庫欠品シミュレーション</p>
       </div>
     </div>
 
-    <!-- 年月セレクター＆アクション -->
-    <div class="flex items-center gap-2 sm:gap-3">
+    <!-- 年月切り替え & 状態バッジ -->
+    <div class="flex items-center space-x-2">
       <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-        <button id="prevMonthBtn" class="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-700 transition" title="前月">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>
-        <select id="monthSelector" class="bg-transparent text-white font-semibold text-xs sm:text-sm px-2 py-1 outline-none cursor-pointer">
-          <!-- JSで自動生成 -->
-        </select>
-        <button id="nextMonthBtn" class="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-700 transition" title="翌月">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>
+        <button id="btnPrevMonth" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs transition">◀</button>
+        <span id="currentYearMonthText" class="px-3 py-1 font-bold text-xs sm:text-sm tracking-wider text-white">2026年10月度</span>
+        <button id="btnNextMonth" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs transition">▶</button>
       </div>
 
-      <!-- シートへ保存ボタン -->
-      <button id="savePlanBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition active:scale-95" title="スプレッドシートへ計画を保存">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-        <span class="hidden sm:inline">シートへ保存</span>
-      </button>
+      <span id="connectionBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        GAS接続中
+      </span>
+    </div>
 
-      <!-- 出庫CSV取込ボタン -->
-      <button id="openCsvModalBtn" class="bg-teal-700 hover:bg-teal-600 text-white font-medium text-xs px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition active:scale-95">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        <span>出庫CSV取込</span>
+    <!-- アクションボタン群 -->
+    <div class="flex items-center space-x-2">
+      <button id="btnSaveToSheet" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+        シートへ保存
       </button>
-
-      <!-- エクスポートボタン -->
-      <button id="exportCsvBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs p-1.5 rounded-lg transition" title="計画データをCSV出力">
+      <button id="btnOpenCsvModal" class="bg-teal-700 hover:bg-teal-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        出庫CSV取込
+      </button>
+      <button id="btnExportCsv" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1.5 rounded text-xs transition" title="現在の画面内容をCSVエクスポート">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
       </button>
     </div>
   </header>
 
-  <!-- 2. KPIサマリーカードエリア（開閉・上部固定対応） -->
-  <section id="kpiArea" class="px-4 pt-3 pb-1 transition-all duration-300">
-    <!-- 折りたたみ時のコンパクトバー -->
-    <div id="kpiCollapsedBar" class="hidden bg-white px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between text-xs">
-      <div class="flex items-center gap-4 flex-wrap">
-        <span class="font-bold text-slate-700 flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-blue-500"></span>サマリー:
-        </span>
-        <span>製造計: <b id="barMakeSum" class="text-blue-600">0</b> c/s</span>
-        <span class="text-slate-300">|</span>
-        <span>目標: <b id="barTargetSum">0</b> c/s (<span id="barRate" class="text-blue-600 font-bold">0%</span>)</span>
-        <span class="text-slate-300">|</span>
-        <span>出庫計: <b id="barOutSum" class="text-amber-600">0</b> c/s</span>
-        <span class="text-slate-300">|</span>
-        <span>欠品: <b id="barShortCount" class="text-emerald-600">0</b> 件</span>
+  <!-- 2. サマリーバー（KPIカード格納・開閉対応） -->
+  <div id="kpiBar" class="px-4 py-2 transition-all duration-200 border-b border-slate-300 bg-slate-100/90">
+    <div class="flex items-center justify-between mb-1.5">
+      <div id="kpiCompactSummary" class="text-xs font-bold text-slate-700 flex items-center gap-4 flex-wrap">
+        <span>サマリー:</span>
+        <span>製造計: <b id="compactMake" class="text-blue-700 text-sm">0</b> c/s</span>
+        <span class="text-slate-400">|</span>
+        <span>目標: <b id="compactTarget" class="text-slate-800 text-sm">24,860</b> c/s (<b id="compactRate" class="text-blue-600">0%</b>)</span>
+        <span class="text-slate-400">|</span>
+        <span>出庫計: <b id="compactOut" class="text-amber-700 text-sm">0</b> c/s</span>
+        <span class="text-slate-400">|</span>
+        <span>欠品: <b id="compactShort" class="text-emerald-700 text-sm">0</b> 件</span>
       </div>
-      <button id="expandKpiBtn" class="text-blue-600 hover:text-blue-800 text-[11px] font-medium flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        カードを展開
+      <div class="flex items-center space-x-2">
+        <button id="btnPinKpi" class="text-[11px] text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition flex items-center gap-1">
+          <span id="pinIcon">📌</span> <span id="pinText">上部に固定</span>
+        </button>
+        <button id="btnToggleKpi" class="text-[11px] text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition flex items-center gap-1">
+          <span id="collapseIcon">▼</span> <span id="collapseText">カードを閉じる</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI大カード群 -->
+    <div id="kpiCardsArea" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase">月間計画製造数</div>
+          <div class="text-lg font-black text-blue-700 tracking-tight" id="kpiTotalMake">0 <span class="text-xs font-normal text-slate-500">c/s</span></div>
+        </div>
+        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">🏭</div>
+      </div>
+      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase">販売目標 / 計画達成率</div>
+          <div class="text-lg font-black text-slate-800 tracking-tight" id="kpiTargetSummary">24,860 <span class="text-xs font-bold text-blue-600" id="kpiTargetRate">(0%)</span></div>
+        </div>
+        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">🎯</div>
+      </div>
+      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase">出庫計 (実績＋予定)</div>
+          <div class="text-lg font-black text-amber-700 tracking-tight" id="kpiTotalOut">0 <span class="text-xs font-normal text-slate-500">c/s</span></div>
+        </div>
+        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">🚚</div>
+      </div>
+      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+        <div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase">欠品ショート警告</div>
+          <div class="text-lg font-black text-emerald-600 tracking-tight" id="kpiAlertCount">0 <span class="text-xs font-normal text-slate-500">件</span></div>
+        </div>
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs" id="kpiAlertIcon">✔</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. コントロールツールバー -->
+  <div class="px-4 py-2 bg-white/90 border-b border-slate-300 flex flex-wrap items-center justify-between gap-2 text-xs">
+    <!-- 期間切り替えタブ（動的生成コンテナ） -->
+    <div class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0" id="periodTabs">
+      <!-- JSで月曜〜日曜サイクルに合わせて動的に生成 -->
+    </div>
+
+    <!-- 補助ツールボタン -->
+    <div class="flex items-center space-x-2">
+      <button id="btnPrintWeekly" class="px-2.5 py-1 rounded font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 transition flex items-center gap-1 active:scale-95" title="表示中の週の製造予定を印刷">
+        <span>🖨</span> 印刷
+      </button>
+      <button id="btnAutoAllocate" class="px-2.5 py-1 rounded font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition flex items-center gap-1 active:scale-95">
+        <span>📋</span> 目標から出庫を仮計算
+      </button>
+      <button id="btnClearOutputs" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
+        <span>☁</span> 出庫クリア
+      </button>
+      <button id="btnReload" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
+        <span>🔄</span> 再読込
       </button>
     </div>
+  </div>
 
-    <!-- 展開時の4大KPIカード -->
-    <div id="kpiCardsWrapper" class="space-y-1.5">
-      <div class="flex items-center justify-end gap-2 text-[11px] text-slate-500">
-        <button id="pinKpiBtn" class="hover:text-slate-800 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-200 transition">
-          <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
-          <span id="pinKpiText">上部に固定</span>
-        </button>
-        <span class="text-slate-300">|</span>
-        <button id="collapseKpiBtn" class="hover:text-slate-800 flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-200 transition">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
-          カードを閉じる
-        </button>
+  <!-- 印刷専用ヘッダー（通常画面では非表示、印刷時のみ出現） -->
+  <div class="print-header px-4 py-2 mb-1 border-b-2 border-slate-800">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 id="printTitle" class="text-base font-black text-slate-900 tracking-wide">週間製造予定表</h2>
+        <div class="text-[11px] text-slate-500 font-semibold" id="printDate"></div>
       </div>
-
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <!-- 計画製造数 -->
-        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200/80 flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500">月間計画製造数</p>
-            <div class="flex items-baseline gap-1 mt-0.5">
-              <span id="cardTotalMake" class="text-2xl font-black text-blue-600 tracking-tight">0</span>
-              <span class="text-xs text-slate-400 font-medium">c/s</span>
-            </div>
-          </div>
-          <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-          </div>
-        </div>
-
-        <!-- 目標＆達成率 -->
-        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200/80 flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500">販売目標 / 計画達成率</p>
-            <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span id="cardTotalTarget" class="text-2xl font-black text-slate-800 tracking-tight">0</span>
-              <span class="text-xs text-slate-400 font-medium">c/s</span>
-              <span id="cardPlanRate" class="text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">0%</span>
-            </div>
-          </div>
-          <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          </div>
-        </div>
-
-        <!-- 出庫計 -->
-        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200/80 flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500">出庫計 (実績＋予定)</p>
-            <div class="flex items-baseline gap-1 mt-0.5">
-              <span id="cardTotalOut" class="text-2xl font-black text-amber-600 tracking-tight">0</span>
-              <span class="text-xs text-slate-400 font-medium">c/s</span>
-            </div>
-          </div>
-          <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          </div>
-        </div>
-
-        <!-- 欠品ショート警告 -->
-        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200/80 flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold text-slate-500">欠品ショート警告</p>
-            <div class="flex items-baseline gap-1 mt-0.5">
-              <span id="cardShortAlerts" class="text-2xl font-black text-emerald-600 tracking-tight">0</span>
-              <span class="text-xs text-slate-400 font-medium">件</span>
-            </div>
-          </div>
-          <div id="cardShortIconWrap" class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          </div>
-        </div>
+      <div class="text-[11px] border border-slate-400 px-3 py-1 text-center font-bold">
+        承認印：_________
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- 3. コントロールバー（週切り替え＆ツールボタン） -->
-  <div class="px-4 py-2 flex items-center justify-between flex-wrap gap-2">
-    <!-- 週切り替えタブ -->
-    <div class="flex items-center bg-white p-0.5 rounded-lg border border-slate-200 shadow-sm text-xs font-semibold text-slate-600">
-      <span class="px-2 text-slate-400 text-[11px] font-medium flex items-center gap-1">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        表示期間:
+  <!-- ガイド・アラートバナー -->
+  <div class="px-4 py-1.5 bg-slate-100 text-[11px] flex flex-wrap items-center justify-between border-b border-slate-300 gap-2">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center gap-1 font-bold text-blue-700">
+        <span class="w-2.5 h-2.5 bg-blue-100 border border-blue-400 rounded-sm"></span> 青セル ＝ 製造計画の直接入力
       </span>
-      <button class="week-tab px-3 py-1 rounded-md transition text-slate-600 hover:text-slate-900" data-range="w1">第1週 (1~7日)</button>
-      <button class="week-tab px-3 py-1 rounded-md transition text-slate-600 hover:text-slate-900" data-range="w2">第2週 (8~14日)</button>
-      <button class="week-tab px-3 py-1 rounded-md transition text-slate-600 hover:text-slate-900" data-range="w3">第3週 (15~21日)</button>
-      <button class="week-tab px-3 py-1 rounded-md transition text-slate-600 hover:text-slate-900" data-range="w4">第4週 (22~28日)</button>
-      <button class="week-tab px-3 py-1 rounded-md transition text-slate-600 hover:text-slate-900" data-range="w5" id="week5Tab">第5週 (29~31日)</button>
-      <button class="week-tab active bg-blue-600 text-white px-3 py-1 rounded-md shadow-sm transition" data-range="all">全日一覧</button>
+      <span class="inline-flex items-center gap-1 font-bold text-amber-700">
+        <span class="w-2.5 h-2.5 bg-amber-100 border border-amber-400 rounded-sm"></span> 橙セル ＝ 出庫予定の直接入力（欠品シミュレーション用）
+      </span>
+      <span class="text-slate-500 hidden md:inline">※数値を入力すると、当日以降月末までの在庫数が瞬時に再計算されます。</span>
+      
+      <!-- 編集中品目のリアルタイム表示バッジ -->
+      <span id="activeEditingBadge" class="hidden items-center gap-1.5 bg-slate-900 text-white px-2 py-0.5 rounded shadow text-[11px] font-bold border border-slate-700">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-300">入力中:</span>
+        <span id="activeEditingText" class="text-white font-extrabold"></span>
+      </span>
     </div>
-
-    <!-- 便利ツールボタン -->
     <div class="flex items-center gap-2">
-      <button id="autoFillBtn" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-medium text-xs px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 transition" title="目標数を出庫予定へ自動按分">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-        目標から出庫を仮計算
-      </button>
-      <button id="clearOutBtn" class="bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 transition" title="出庫数のみクリア">
-        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        出庫クリア
-      </button>
-      <button id="reloadBtn" class="bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 text-xs px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 transition" title="最新状態に再読込">
-        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        再読込
-      </button>
+      <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1">
+        🔗 前月末残数を月初在庫へ自動引継中
+      </span>
+      <span class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold border border-rose-300">
+        残数赤太文字＝安全在庫割れ / 赤背景＝欠品警告
+      </span>
     </div>
   </div>
 
-  <!-- ガイドライン & アラートバー -->
-  <div class="px-4 pb-2 space-y-1.5">
-    <div class="bg-blue-50/70 border border-blue-200/80 rounded-lg px-3 py-1.5 text-[11px] text-blue-900 flex items-center justify-between flex-wrap gap-2">
-      <div class="flex items-center gap-2">
-        <span class="bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded text-[10px]">青セル</span>
-        <span>＝ 製造計画の直接入力</span>
-        <span class="bg-amber-600 text-white font-bold px-1.5 py-0.5 rounded text-[10px] ml-2">橙セル</span>
-        <span>＝ 出庫予定の直接入力（欠品シミュレーション用）</span>
-        <span class="text-slate-500 hidden md:inline ml-2">※数値を入力すると、当日以降月末までの在庫数が瞬時に再計算されます。</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <span class="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"></path></svg>
-          前月末残数を月初在庫へ自動引継中
-        </span>
-        <span class="text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-          赤太文字＝安全在庫割れ / 赤背景＝完全欠品
-        </span>
+  <!-- 在庫アラート一覧バナー（条件合致時のみ表示） -->
+  <div id="alertBanner" class="hidden mx-4 mt-2 p-2.5 bg-rose-50 border-l-4 border-rose-500 text-rose-900 rounded-r shadow-sm text-xs flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-rose-600 font-extrabold text-sm">⚠</span>
+      <div>
+        <span class="font-black text-rose-700" id="alertBannerTitle">在庫ショート（欠品・安全在庫割れ）を検知しました</span>
+        <div class="text-[11px] text-rose-600" id="alertBannerDesc">以下の品目で残数がマイナスまたは安全在庫を下回る日程があります。製造計画を前倒しで割り振ってください。</div>
       </div>
     </div>
-
-    <!-- 欠品アラートバナー（動的表示） -->
-    <div id="alertBanner" class="hidden bg-rose-50 border border-rose-300 rounded-lg px-3 py-2 text-xs text-rose-800 flex items-start gap-2 shadow-sm animate-bounce-once">
-      <svg class="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-      </svg>
-      <div class="flex-1">
-        <p class="font-bold" id="alertTitle">在庫ショート警告を検知しました</p>
-        <p class="text-[11px] text-rose-700 mt-0.5" id="alertDesc">以下の品目で残数がマイナスまたは安全在庫を下回る日程があります。製造計画を前倒しで割り振ってください。</p>
-      </div>
-      <button id="closeAlertBtn" class="text-rose-400 hover:text-rose-600 text-sm font-bold px-1">&times;</button>
-    </div>
+    <button onclick="document.getElementById('alertBanner').classList.add('hidden')" class="text-rose-400 hover:text-rose-700 font-bold px-2 py-1">✕</button>
   </div>
 
-  <!-- 4. メイン表（コンパクト列幅＆引き伸ばし防止の w-max） -->
-  <main class="flex-1 px-4 pb-6 overflow-hidden flex flex-col">
-    <div class="bg-white rounded-xl shadow border border-slate-200 overflow-hidden flex-1 flex flex-col">
-      <div class="overflow-auto flex-1 relative" id="tableContainer">
-        <!-- w-max により画面幅に合わせて列がビヨーンと伸びるのを防止 -->
-        <table class="w-max text-xs border-collapse select-none" id="productionTable">
-          <thead id="tableHead" class="text-slate-700 bg-slate-50 font-semibold border-b border-slate-200">
-            <!-- JSで動的構築 -->
-          </thead>
-          <tbody id="tableBody" class="divide-y divide-slate-200 bg-white">
-            <!-- JSで動的構築 -->
-          </tbody>
-          <tfoot id="tableFoot" class="bg-slate-100 font-bold border-t-2 border-slate-300 sticky bottom-0 z-20">
-            <!-- JSで動的構築 -->
-          </tfoot>
-        </table>
-      </div>
+  <!-- 4. メインデータグリッドコンテナ -->
+  <main class="flex-1 px-4 py-2 overflow-hidden flex flex-col">
+    <div class="flex-1 bg-white rounded-lg shadow border border-slate-400 overflow-auto relative">
+      <table id="mainTable" class="w-max border-collapse text-left select-none text-xs">
+        <thead id="tableHead" class="text-slate-200 font-bold select-none">
+          <!-- JSで動的生成：ヘッダー1行目（日付）＆ 2行目（製造/出庫/残数） -->
+        </thead>
+        <tbody id="tableBody" class="divide-y divide-slate-300 font-medium">
+          <!-- JSで動的生成：品目別行データ -->
+        </tbody>
+        <tfoot id="tableFoot" class="sticky bottom-0 z-30 font-bold">
+          <!-- JSで動的生成：日別合計行 -->
+        </tfoot>
+      </table>
     </div>
   </main>
 
   <!-- 5. 出庫CSV取込モーダル -->
-  <div id="csvModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 space-y-4 animate-scale-up">
-      <div class="flex items-center justify-between border-b pb-3">
-        <div class="flex items-center gap-2 text-teal-800">
-          <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <h3 class="font-bold text-base text-slate-800">出庫CSVファイルの取込</h3>
-        </div>
-        <button id="closeCsvModalBtn" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+  <div id="csvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
+      <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          出庫CSVファイルの取込
+        </h3>
+        <button id="btnCloseCsvModal" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
       </div>
+      
+      <div class="p-4 space-y-3 text-xs">
+        <p class="text-slate-600 leading-relaxed">
+          基幹システム等から出力した「出庫実績CSV（またはExcelをCSV形式で保存したファイル）」を指定してください。<br>
+          <span class="text-teal-700 font-bold">※取り込みを実行すると、既存の古い出庫数を自動でゼロクリアしてから最新データで上書きします（再取り込み時も重複しません）。</span>
+        </p>
 
-      <div class="text-xs text-slate-600 space-y-2">
-        <p>基幹システム等から出力した「出庫実績CSV（またはExcelをCSV形式で保存したファイル）」を指定してください。</p>
-        <div class="bg-teal-50 border border-teal-200 rounded-lg p-2.5 space-y-1">
-          <p class="font-bold text-teal-900">自動反映ルール：</p>
-          <p class="text-teal-800">
-            CSV内の「ケース数1」「ケース数2」…の数値を、そのまま該当日付の出庫数（橙セル）へ反映します。
-          </p>
-          <p class="text-[11px] text-teal-700">※Shift-JIS / UTF-8 の文字コードを自動判別するため文字化けしません。</p>
+        <div class="bg-teal-50 border border-teal-200 rounded-lg p-2.5 text-[11px] text-teal-900">
+          <div class="font-bold mb-0.5 text-teal-800">自動反映ルール：</div>
+          <div>CSV内の「ケース数1」「ケース数2」…の数値を、そのまま該当日の出庫数（橙セル）へ反映します。</div>
+          <div class="text-[10px] text-teal-600 mt-1">※全角文字・全角数字（１，２，３）・Shift-JIS / UTF-8 を自動判別するため文字化けしません。</div>
         </div>
-      </div>
 
-      <div>
-        <label class="block text-xs font-semibold text-slate-700 mb-1">CSVファイルを選択</label>
-        <input type="file" id="csvFileInput" accept=".csv,text/csv" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer border rounded-lg p-1">
-      </div>
-
-      <!-- 解析結果プレビュー -->
-      <div id="csvPreviewBox" class="hidden bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 text-xs">
-        <div class="flex items-center justify-between">
-          <span class="font-bold text-slate-700 flex items-center gap-1">
-            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            解析プレビュー
-          </span>
-          <span id="csvMatchCount" class="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded">0品目照合</span>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">CSVファイルを選択</label>
+          <input type="file" id="csvFileInput" accept=".csv,text/csv" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer border border-slate-300 rounded p-1">
         </div>
-        <div id="csvPreviewList" class="max-h-40 overflow-y-auto divide-y divide-slate-200 bg-white rounded border border-slate-200 text-[11px]">
-          <!-- JSでプレビューリスト生成 -->
+
+        <!-- リアルタイム解析プレビューエリア -->
+        <div id="csvPreviewArea" class="hidden border border-slate-200 rounded-lg p-2.5 bg-slate-50 max-h-48 overflow-y-auto space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1">
+            <span>解析プレビュー</span>
+            <span id="csvMatchCount" class="text-teal-600">0品目 照合成功</span>
+          </div>
+          <div id="csvPreviewList" class="space-y-1 text-[11px]">
+            <!-- 照合結果が並ぶ -->
+          </div>
         </div>
       </div>
 
-      <div class="flex items-center justify-between pt-2">
-        <button id="testCsvSampleBtn" class="text-[11px] text-slate-500 hover:text-blue-600 underline">
+      <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-between border-t border-slate-200">
+        <button id="btnLoadSampleCsv" class="text-[11px] text-teal-700 underline font-semibold hover:text-teal-900">
           テスト用サンプルデータ流し込み (10月度)
         </button>
-        <div class="flex items-center gap-2">
-          <button id="cancelCsvModalBtn" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-600 hover:bg-slate-50">閉じる</button>
-          <button id="applyCsvDataBtn" class="bg-teal-600 hover:bg-teal-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1 active:scale-95 disabled:opacity-50" disabled>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            この内容で画面に反映
+        <div class="flex items-center space-x-2">
+          <button id="btnCancelCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
+          <button id="btnApplyCsvData" class="px-3.5 py-1.5 rounded bg-teal-600 hover:bg-teal-500 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>
+            この内容で画面に反映 (上書き)
           </button>
         </div>
       </div>
@@ -378,233 +367,198 @@
   </div>
 
   <!-- トースト通知 -->
-  <div id="toast" class="fixed bottom-4 right-4 z-50 transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2">
-    <span id="toastIcon"></span>
-    <span id="toastMsg" class="font-medium"></span>
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-xl text-xs flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+    <span id="toastIcon">✔</span>
+    <span id="toastMsg">保存しました</span>
+  </div>
+
+  <!-- 入力アシスト：セルの真上に浮き出る品目名フロート吹き出し -->
+  <div id="inputAssistTooltip" class="fixed pointer-events-none z-50 opacity-0 transform -translate-x-1/2 -translate-y-full transition-opacity duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-2 whitespace-nowrap border-2">
+    <!-- JSで動的生成 -->
   </div>
 
   <script>
-    /**
-     * 製造計画・入出庫管理システム コアスクリプト
-     */
+    // ==========================================
+    // アプリケーション全体の状態管理（APP_STATE）
+    // ==========================================
     const APP_STATE = {
       year: 2026,
       month: 10,
+      baseYear: 2026,
+      baseMonth: 9,
       daysInMonth: 31,
-      currentRange: 'all', // 'w1', 'w2', 'w3', 'w4', 'w5', 'all'
-      isGasEnv: (typeof google !== 'undefined' && google.script && google.script.run),
-      kpiPinned: false,
-      kpiCollapsed: false,
-      products: [],
-      matrix: {},          // productId -> { day: { make, out } }
-      monthlyStore: {}     // 'YYYY-M' -> { matrix, initStock }
+      currentPeriod: 'all', // 'w1', 'w2', 'w3', 'w4', 'w5', 'all'
+      isKpiPinned: false,
+      isKpiCollapsed: false,
+      isGasConnected: false,
+
+      // 商品マスタ定義（H列入数・安全在庫・月初基準在庫）
+      products: [
+        { id: 1,  name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 7200, masterInitStock: 6208, initStock: 6208, safeStock: 500, memo: '主力商品' },
+        { id: 2,  name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 60,   masterInitStock: 50,   initStock: 50,   safeStock: 20,  memo: '' },
+        { id: 3,  name: '博多純氷カチ割り1kg',   spec: '1kg×10',  packQty: 10, target: 1400, masterInitStock: 706,  initStock: 706,  safeStock: 200, memo: '' },
+        { id: 4,  name: 'おいしい氷1kg',         spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 2015, initStock: 2015, safeStock: 300, memo: '' },
+        { id: 5,  name: 'ドンキホーテ極氷1.1kg', spec: '1.1kg×8', packQty: 10, target: 1400, masterInitStock: 2336, initStock: 2336, safeStock: 200, memo: '' },
+        { id: 6,  name: 'ヒロキュー千年氷1kg',   spec: '1kg×10',  packQty: 10, target: 500,  masterInitStock: 200,  initStock: 200,  safeStock: 100, memo: '' },
+        { id: 7,  name: 'CGC1kg',                spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 11,   initStock: 11,   safeStock: 300, memo: '' },
+        { id: 8,  name: 'おいしい氷2kgチャック', spec: '2kg×5',   packQty: 6,  target: 1600, masterInitStock: 1761, initStock: 1761, safeStock: 250, memo: 'チャック付き袋' },
+        { id: 9,  name: 'おいしい氷1.1kg',       spec: '1.1kg×8', packQty: 12, target: 3600, masterInitStock: 5975, initStock: 5975, safeStock: 600, memo: '' },
+        { id: 10, name: 'ゆめイチ1kg',           spec: '1kg×10',  packQty: 12, target: 2400, masterInitStock: 1636, initStock: 1636, safeStock: 400, memo: '' },
+        { id: 11, name: 'ゆめイチ2.1kg',         spec: '2.1kg×4', packQty: 6,  target: 4000, masterInitStock: 5829, initStock: 5829, safeStock: 600, memo: '' },
+        { id: 12, name: 'スティック40mm',        spec: '本',      packQty: 1,  target: 200,  masterInitStock: 69,   initStock: 69,   safeStock: 30,  memo: '' },
+        { id: 13, name: 'スティック60mm',        spec: '本',      packQty: 1,  target: 50,   masterInitStock: 30,   initStock: 30,   safeStock: 10,  memo: '' },
+        { id: 14, name: 'スティック110mm',       spec: '本',      packQty: 1,  target: 50,   masterInitStock: 40,   initStock: 40,   safeStock: 10,  memo: '' }
+      ],
+
+      // 日別データ matrix[productId][day] = { make: 0, out: 0 }
+      matrix: {},
+      parsedCsvResult: null
     };
 
-    // 初期商品マスタ（スプシ未接続時のデフォルト＆フォールバック）
-    const DEFAULT_PRODUCTS = [
-      { id: 1, name: 'おいしい氷3kg', spec: '3kg×4', target: 7200, initStock: 6208, safeStock: 500, packQty: 4, codes: ['112'] },
-      { id: 2, name: 'おいしい氷アイスカップ', spec: 'カップ', target: 60, initStock: 50, safeStock: 20, packQty: 12, codes: ['116', '162'] },
-      { id: 3, name: '博多純氷カチ割り1kg', spec: '1kg×10', target: 1400, initStock: 706, safeStock: 200, packQty: 10, codes: ['23'] },
-      { id: 4, name: 'おいしい氷1kg', spec: '1kg×10', target: 1200, initStock: 2015, safeStock: 300, packQty: 12, codes: ['31'] },
-      { id: 5, name: 'ドンキホーテ極氷1.1kg', spec: '1.1kg×8', target: 1400, initStock: 2336, safeStock: 200, packQty: 10, codes: ['33', '163'] },
-      { id: 6, name: 'ヒロキュー千年氷1kg', spec: '1kg×10', target: 500, initStock: 200, safeStock: 100, packQty: 10, codes: ['164', '37'] },
-      { id: 7, name: 'CGC1kg', spec: '1kg×10', target: 1200, initStock: 11, safeStock: 300, packQty: 12, codes: ['136', '161'] },
-      { id: 8, name: 'おいしい氷2kgチャック', spec: '2kg×5', target: 1600, initStock: 1761, safeStock: 250, packQty: 6, codes: ['8'] },
-      { id: 9, name: 'おいしい氷1.1kg', spec: '1.1kg×8', target: 3600, initStock: 5975, safeStock: 600, packQty: 12, codes: ['154'] },
-      { id: 10, name: 'ゆめイチ1kg', spec: '1kg×10', target: 2400, initStock: 1636, safeStock: 400, packQty: 12, codes: ['10'] },
-      { id: 11, name: 'ゆめイチ2.1kg', spec: '2.1kg×4', target: 4000, initStock: 5829, safeStock: 600, packQty: 6, codes: ['11'] },
-      { id: 12, name: 'スティック40mm', spec: '本', target: 200, initStock: 69, safeStock: 30, packQty: 1, codes: ['169'] },
-      { id: 13, name: 'スティック60mm', spec: '本', target: 50, initStock: 30, safeStock: 10, packQty: 1, codes: ['170'] },
-      { id: 14, name: 'スティック110mm', spec: '本', target: 50, initStock: 40, safeStock: 10, packQty: 1, codes: ['171'] }
-    ];
-
-    /**
-     * スプレッドシート（GAS）から最新データを読み込む
-     */
-    function loadDataFromGas(year, month) {
-      if (!APP_STATE.isGasEnv) return;
-
-      const envBadge = document.getElementById('envBadge');
-      if (envBadge) {
-        envBadge.className = 'bg-amber-800/80 text-amber-200 text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-600 flex items-center gap-1';
-        envBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>スプシ読込中...';
-      }
-
-      google.script.run
-        .withSuccessHandler((res) => {
-          if (!res || !res.success) {
-            showToast('スプシ読込エラー: ' + (res ? res.message : 'データなし'), 'error');
-            return;
-          }
-
-          if (envBadge) {
-            envBadge.className = 'bg-emerald-900/90 text-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-600 flex items-center gap-1 shadow-sm';
-            envBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>GAS接続中';
-          }
-
-          APP_STATE.year = res.year;
-          APP_STATE.month = res.month;
-          APP_STATE.daysInMonth = res.daysInMonth;
-          APP_STATE.products = res.products.map(p => {
-            const def = DEFAULT_PRODUCTS.find(d => d.id === p.id);
-            return {
-              ...p,
-              codes: def ? def.codes : [String(p.id)],
-              packQty: p.packQty || (def ? def.packQty : 1)
-            };
-          });
-          APP_STATE.matrix = res.matrix;
-
-          // 月セレクターを同期
-          const selector = document.getElementById('monthSelector');
-          if (selector) selector.value = `${res.year}-${res.month}`;
-
-          renderTable();
-          showToast(`スプレッドシートから${res.year}年${res.month}月の計画を読み込みました`, 'success');
-        })
-        .withFailureHandler((err) => {
-          console.error('GAS load error:', err);
-          showToast('スプレッドシート通信エラー: ' + err.message, 'error');
-          if (envBadge) {
-            envBadge.className = 'bg-rose-900/80 text-rose-200 text-[10px] font-semibold px-2 py-0.5 rounded border border-rose-600 flex items-center gap-1';
-            envBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>接続エラー';
-          }
-        })
-        .apiGetInitialData(year, month);
-    }
-
-    /**
-     * スプレッドシート（GAS）へ計画を一括保存する
-     */
-    function saveDataToGas() {
-      if (!APP_STATE.isGasEnv) {
-        showToast('プレビュー環境のためローカルにのみ保持されます（GAS接続時に自動書き込みされます）', 'info');
-        return;
-      }
-
-      const records = [];
+    // 日付とマトリクスの初期化
+    function initMatrix() {
+      APP_STATE.daysInMonth = new Date(APP_STATE.year, APP_STATE.month, 0).getDate();
+      APP_STATE.matrix = {};
       APP_STATE.products.forEach(p => {
+        APP_STATE.matrix[p.id] = {};
         for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-          const make = APP_STATE.matrix[p.id]?.[d]?.make || 0;
-          if (make > 0) {
-            records.push({
-              day: d,
-              productId: p.id,
-              productName: p.name,
-              make: make
-            });
-          }
+          APP_STATE.matrix[p.id][d] = { make: 0, out: 0 };
         }
       });
-
-      const saveBtn = document.getElementById('savePlanBtn');
-      if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<span class="animate-spin mr-1">↻</span> 保存中...';
-      }
-
-      google.script.run
-        .withSuccessHandler((res) => {
-          if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg><span class="hidden sm:inline">シートへ保存</span>';
-          }
-          if (res && res.success) {
-            showToast(`スプレッドシート「日別製造計画」へ${res.count}件を保存しました！`, 'success');
-          } else {
-            showToast('保存エラー: ' + (res ? res.message : '不明なエラー'), 'error');
-          }
-        })
-        .withFailureHandler((err) => {
-          if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '保存再試行';
-          }
-          showToast('保存通信エラー: ' + err.message, 'error');
-        })
-        .apiSaveDailyPlans(records, APP_STATE.year, APP_STATE.month);
     }
 
-    function switchTargetMonth(year, month) {
-      if (APP_STATE.isGasEnv) {
-        loadDataFromGas(year, month);
-        return;
-      }
-
-      // ローカルプレビュー時の月切り替え＆前月末在庫自動引き継ぎ
-      const currentKey = `${APP_STATE.year}-${APP_STATE.month}`;
-      APP_STATE.monthlyStore[currentKey] = {
-        matrix: JSON.parse(JSON.stringify(APP_STATE.matrix)),
-        products: JSON.parse(JSON.stringify(APP_STATE.products))
-      };
-
-      const prevYear = (month === 1) ? year - 1 : year;
-      const prevMonth = (month === 1) ? 12 : month - 1;
-      const prevKey = `${prevYear}-${prevMonth}`;
-      let carriedStocks = {};
-
-      if (APP_STATE.monthlyStore[prevKey]) {
-        const prevStore = APP_STATE.monthlyStore[prevKey];
-        const prevDays = new Date(prevYear, prevMonth, 0).getDate();
-        prevStore.products.forEach(p => {
-          let curStock = p.initStock;
-          for (let d = 1; d <= prevDays; d++) {
-            const m = prevStore.matrix[p.id]?.[d]?.make || 0;
-            const o = prevStore.matrix[p.id]?.[d]?.out || 0;
-            curStock = curStock + m - o;
-          }
-          carriedStocks[p.id] = curStock;
+    // カレンダーの月曜〜日曜サイクル（週配列）を算出
+    function getMonthWeeks(year, month) {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const firstDate = new Date(year, month - 1, 1);
+      const dow = firstDate.getDay(); // 0 is Sun, 1 is Mon...
+      const mondayOffset = (dow === 0) ? -6 : (1 - dow);
+      
+      const weeks = [];
+      let cur = new Date(year, month - 1, 1 + mondayOffset);
+      const lastDate = new Date(year, month - 1, daysInMonth);
+      
+      let wIdx = 1;
+      while (cur <= lastDate) {
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + i);
+          days.push({
+            year: d.getFullYear(),
+            month: d.getMonth() + 1,
+            day: d.getDate(),
+            dow: d.getDay(),
+            isCurrentMonth: (d.getFullYear() === year && (d.getMonth() + 1) === month)
+          });
+        }
+        const startD = days[0];
+        const endD = days[6];
+        weeks.push({
+          id: `w${wIdx}`,
+          weekNum: wIdx,
+          label: `第${wIdx}週 (${startD.month}/${startD.day}〜${endD.month}/${endD.day})`,
+          days: days
         });
+        wIdx++;
+        cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
       }
-
-      APP_STATE.year = year;
-      APP_STATE.month = month;
-      APP_STATE.daysInMonth = new Date(year, month, 0).getDate();
-
-      const newKey = `${year}-${month}`;
-      if (APP_STATE.monthlyStore[newKey]) {
-        APP_STATE.matrix = JSON.parse(JSON.stringify(APP_STATE.monthlyStore[newKey].matrix));
-        APP_STATE.products = JSON.parse(JSON.stringify(APP_STATE.monthlyStore[newKey].products));
-      } else {
-        APP_STATE.products = DEFAULT_PRODUCTS.map(p => ({
-          ...p,
-          initStock: (carriedStocks[p.id] !== undefined) ? carriedStocks[p.id] : p.initStock
-        }));
-        APP_STATE.matrix = {};
-        APP_STATE.products.forEach(p => {
-          APP_STATE.matrix[p.id] = {};
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            APP_STATE.matrix[p.id][d] = { make: 0, out: 0 };
-          }
-        });
-      }
-
-      const selector = document.getElementById('monthSelector');
-      if (selector) selector.value = `${year}-${month}`;
-
-      renderTable();
-      showToast(`${year}年${month}月へ切り替えました`, 'info');
+      return weeks;
     }
 
+    // 表示する日の配列を取得
     function getDisplayDays() {
-      const days = [];
-      const total = APP_STATE.daysInMonth;
-      if (APP_STATE.currentRange === 'all') {
-        for (let i = 1; i <= total; i++) days.push(i);
-      } else if (APP_STATE.currentRange === 'w1') {
-        for (let i = 1; i <= Math.min(7, total); i++) days.push(i);
-      } else if (APP_STATE.currentRange === 'w2') {
-        for (let i = 8; i <= Math.min(14, total); i++) days.push(i);
-      } else if (APP_STATE.currentRange === 'w3') {
-        for (let i = 15; i <= Math.min(21, total); i++) days.push(i);
-      } else if (APP_STATE.currentRange === 'w4') {
-        for (let i = 22; i <= Math.min(28, total); i++) days.push(i);
-      } else if (APP_STATE.currentRange === 'w5') {
-        for (let i = 29; i <= total; i++) days.push(i);
+      const year = APP_STATE.year;
+      const month = APP_STATE.month;
+      const daysInMonth = APP_STATE.daysInMonth;
+      const period = APP_STATE.currentPeriod;
+
+      if (period === 'all') {
+        const list = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dt = new Date(year, month - 1, d);
+          list.push({
+            year: year,
+            month: month,
+            day: d,
+            dow: dt.getDay(),
+            isCurrentMonth: true
+          });
+        }
+        return list;
       }
-      return days;
+
+      const weeks = getMonthWeeks(year, month);
+      const found = weeks.find(w => w.id === period);
+      if (found) {
+        return found.days;
+      }
+
+      if (weeks.length > 0) {
+        APP_STATE.currentPeriod = 'all';
+        return getDisplayDays();
+      }
+      return [];
     }
 
+    // 期間切り替えタブの動的生成（月曜〜日曜）
+    function renderPeriodTabs() {
+      const container = document.getElementById('periodTabs');
+      if (!container) return;
+
+      const weeks = getMonthWeeks(APP_STATE.year, APP_STATE.month);
+
+      let html = `
+        <span class="text-slate-500 font-bold text-[11px] mr-1 flex items-center gap-1 shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          表示期間:
+        </span>
+      `;
+
+      weeks.forEach(w => {
+        const active = (APP_STATE.currentPeriod === w.id);
+        const cls = active
+          ? 'bg-blue-600 text-white shadow-sm'
+          : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+        html += `<button data-period="${w.id}" class="period-btn px-2.5 py-1 rounded font-bold text-[11px] ${cls} transition active:scale-95 shrink-0 whitespace-nowrap">${w.label}</button>`;
+      });
+
+      const allActive = (APP_STATE.currentPeriod === 'all');
+      const allCls = allActive
+        ? 'bg-blue-600 text-white shadow-sm'
+        : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+      html += `<button data-period="all" class="period-btn px-2.5 py-1 rounded font-bold text-[11px] ${allCls} transition active:scale-95 shrink-0 whitespace-nowrap">全日一覧</button>`;
+
+      container.innerHTML = html;
+
+      container.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          APP_STATE.currentPeriod = this.dataset.period;
+          renderPeriodTabs();
+          renderTable();
+        });
+      });
+    }
+
+    // トースト表示
+    function showToast(msg, icon = '✔') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // 数値の安全なパース
+    function cleanNum(val) {
+      if (val === undefined || val === null || val === '') return 0;
+      const str = String(val).normalize('NFKC').replace(/,/g, '').trim();
+      const n = parseInt(str, 10);
+      return isNaN(n) ? 0 : n;
+    }
+
+    // テーブルの再描画
     function renderTable() {
       const days = getDisplayDays();
       const thead = document.getElementById('tableHead');
@@ -616,61 +570,82 @@
       const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'];
 
       // 1. テーブルヘッダーの生成
-      let h1 = `<tr class="sticky-header-row-1 divide-x divide-slate-200">
-        <th rowspan="2" class="sticky-corner-1 bg-slate-100 text-left px-2 py-2 text-xs font-bold text-slate-800 w-[140px] min-w-[140px] border-r border-slate-300">品目名</th>
-        <th rowspan="2" class="sticky-corner-2 bg-slate-100 text-right px-2 py-2 text-[11px] font-bold text-slate-700 w-[65px] min-w-[65px] border-r border-slate-300">
+      let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
+        <th rowspan="2" class="sticky-corner-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[140px] min-w-[140px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">品目名</th>
+        <th rowspan="2" class="sticky-corner-2 bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-slate-200 w-[65px] min-w-[65px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">
           <div>月初在庫</div>
-          <div class="text-[9px] text-emerald-600 font-normal">(自動引継)</div>
+          <div class="text-[9px] text-emerald-400 font-normal leading-tight">(自動引継)</div>
         </th>
-        <th rowspan="2" class="sticky-corner-3 bg-slate-100 text-right px-2 py-2 text-xs font-bold text-blue-700 w-[65px] min-w-[65px] border-r border-slate-300">累計製造</th>
-        <th rowspan="2" class="sticky-corner-4 bg-slate-100 text-right px-2 py-2 text-xs font-bold text-amber-700 w-[65px] min-w-[65px] border-r-2 border-slate-400">累計出庫</th>`;
+        <th rowspan="2" class="sticky-corner-3 bg-slate-800 text-right px-2 py-1 text-xs font-bold text-blue-300 w-[65px] min-w-[65px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">累計製造</th>
+        <th rowspan="2" class="sticky-corner-4 bg-slate-800 text-right px-2 py-1 text-xs font-bold text-amber-300 w-[65px] min-w-[65px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">累計出庫</th>`;
 
-      days.forEach(d => {
-        const dateObj = new Date(y, m - 1, d);
-        const dayIdx = dateObj.getDay();
-        const dow = dayOfWeekStr[dayIdx];
-        let dayClass = 'bg-slate-50 text-slate-700';
-        if (dayIdx === 0) dayClass = 'bg-rose-50 text-rose-700'; // 日曜
-        if (dayIdx === 6) dayClass = 'bg-blue-50 text-blue-700'; // 土曜
+      days.forEach(dayInfo => {
+        const dow = dayOfWeekStr[dayInfo.dow];
+        let dayClass = 'bg-slate-800 text-slate-100';
+        if (dayInfo.dow === 0) dayClass = 'bg-rose-900/95 text-rose-100 font-extrabold';
+        else if (dayInfo.dow === 6) dayClass = 'bg-blue-900/95 text-blue-100 font-extrabold';
+        if (!dayInfo.isCurrentMonth) dayClass = 'bg-slate-700/80 text-slate-400 font-medium';
 
-        // 1日あたりの幅：製造44 + 出庫44 + 残数52 = 140px
-        h1 += `<th colspan="3" class="${dayClass} text-center py-1 px-1 border-r border-slate-300 w-[140px] min-w-[140px]">
-          <span class="font-bold text-[11px]">${m}/${d} (${dow})</span>
+        h1 += `<th colspan="3" class="th-date-header ${dayClass} text-center py-1 px-1 border-r border-b border-slate-600 w-[140px] min-w-[140px]">
+          <span class="text-[11px] tracking-wide">${dayInfo.month}/${dayInfo.day} (${dow})</span>
         </th>`;
       });
       h1 += `</tr>`;
 
-      let h2 = `<tr class="sticky-header-row-2 divide-x divide-slate-200 text-[10px] text-slate-500 bg-slate-100 border-b border-slate-300">`;
-      days.forEach(() => {
-        h2 += `<th class="text-center py-1 text-blue-700 bg-blue-50/50 w-[44px] min-w-[44px] max-w-[44px]">製造</th>
-               <th class="text-center py-1 text-amber-700 bg-amber-50/50 w-[44px] min-w-[44px] max-w-[44px]">出庫</th>
-               <th class="text-center py-1 text-slate-700 bg-slate-100 w-[52px] min-w-[52px] max-w-[52px] border-r border-slate-300">残数</th>`;
+      let h2 = `<tr class="divide-x divide-slate-600 text-[10px] bg-slate-900 text-slate-300 h-[24px]">`;
+      days.forEach(dayInfo => {
+        const dow = dayInfo.dow;
+        let subBgM = 'bg-slate-900 text-blue-300';
+        let subBgO = 'bg-slate-900 text-amber-300';
+        let subBgS = 'bg-slate-900 text-slate-200 border-r border-slate-600';
+
+        if (!dayInfo.isCurrentMonth) {
+          subBgM = 'bg-slate-800 text-slate-500';
+          subBgO = 'bg-slate-800 text-slate-500';
+          subBgS = 'bg-slate-800 text-slate-400 border-r border-slate-600';
+        } else if (dow === 0) {
+          subBgM = 'bg-rose-950 text-blue-200';
+          subBgO = 'bg-rose-950 text-amber-200';
+          subBgS = 'bg-rose-950 text-rose-200 border-r border-slate-600';
+        } else if (dow === 6) {
+          subBgM = 'bg-blue-950 text-blue-200';
+          subBgO = 'bg-blue-950 text-amber-200';
+          subBgS = 'bg-blue-950 text-slate-200 border-r border-slate-600';
+        }
+
+        h2 += `<th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] max-w-[44px] border-b border-slate-700 ${subBgM}">製造</th>
+               <th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] max-w-[44px] border-b border-slate-700 ${subBgO}">出庫</th>
+               <th class="th-sub-header text-center py-0.5 font-bold w-[52px] min-w-[52px] max-w-[52px] border-b border-slate-700 ${subBgS}">残数</th>`;
       });
       h2 += `</tr>`;
 
       thead.innerHTML = h1 + h2;
 
-      // 2. テーブルボディ（各品目データ行）の生成
+      // 2. テーブルボディの生成
       let bHtml = '';
       let monthlyTotalMake = 0;
       let monthlyTotalOut = 0;
       let monthlyTotalTarget = 0;
       let totalShortAlerts = 0;
 
-      // 日別集計用
       const dayTotals = {};
       for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
         dayTotals[d] = { make: 0, out: 0 };
       }
 
-      APP_STATE.products.forEach(p => {
+      APP_STATE.products.forEach((p, rowIdx) => {
         monthlyTotalTarget += (p.target || 0);
         let curStock = p.initStock || 0;
         let pMakeSum = 0;
         let pOutSum = 0;
         let rowHasShort = false;
 
-        let dayCells = '';
+        const isEven = (rowIdx % 2 === 1);
+        const rowBgClass = isEven ? 'bg-slate-50/90' : 'bg-white';
+        const fixedColBg = isEven ? 'bg-slate-100' : 'bg-slate-50';
+
+        // 全日付の在庫推移マップを事前計算
+        const dailyStockMap = {};
         for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
           const makeVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
           const outVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
@@ -681,39 +656,10 @@
           dayTotals[d].out += outVal;
 
           curStock = curStock + makeVal - outVal;
+          dailyStockMap[d] = curStock;
 
-          // 表示対象日のみセルを生成
-          if (days.includes(d)) {
-            // 残数アラート判定：
-            // 1. 完全欠品（残数マイナス）：赤ベタ塗り＋白文字
-            // 2. 安全在庫割れ：淡い赤背景＋くっきり赤太文字＋赤枠
-            let stockStyle = 'text-slate-700';
-            if (curStock < 0) {
-              stockStyle = 'bg-rose-500 text-white font-bold px-1 rounded-sm shadow-sm';
-              rowHasShort = true;
-            } else if (curStock < p.safeStock) {
-              stockStyle = 'text-rose-600 font-black bg-rose-50 border border-rose-300 px-1 rounded-sm shadow-sm';
-              rowHasShort = true;
-            }
-
-            dayCells += `
-              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] bg-blue-50/20">
-                <input type="number" min="0" step="1" 
-                  value="${makeVal > 0 ? makeVal : ''}" 
-                  placeholder="-"
-                  data-pid="${p.id}" data-day="${d}" data-type="make"
-                  class="make-input w-full h-7 text-center font-bold text-blue-600 bg-transparent outline-none focus:bg-blue-100 focus:ring-1 focus:ring-blue-500 text-xs px-0.5">
-              </td>
-              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] bg-amber-50/20">
-                <input type="number" min="0" step="1" 
-                  value="${outVal > 0 ? outVal : ''}" 
-                  placeholder="-"
-                  data-pid="${p.id}" data-day="${d}" data-type="out"
-                  class="out-input w-full h-7 text-center font-bold text-amber-600 bg-transparent outline-none focus:bg-amber-100 focus:ring-1 focus:ring-amber-500 text-xs px-0.5">
-              </td>
-              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] max-w-[52px] border-r border-slate-300">
-                <span class="${stockStyle} block">${curStock.toLocaleString()}</span>
-              </td>`;
+          if (curStock < p.safeStock) {
+            rowHasShort = true;
           }
         }
 
@@ -721,18 +667,72 @@
         monthlyTotalMake += pMakeSum;
         monthlyTotalOut += pOutSum;
 
-        bHtml += `<tr class="divide-x divide-slate-200 hover:bg-slate-50/80 transition" id="row-p-${p.id}">
-          <td class="sticky-col-1 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 border-r border-slate-300">
+        let dayCells = '';
+        days.forEach(dayInfo => {
+          const dow = dayInfo.dow;
+          let colDayBg = '';
+          if (dow === 0) colDayBg = 'bg-rose-50/40';
+          else if (dow === 6) colDayBg = 'bg-blue-50/40';
+
+          if (!dayInfo.isCurrentMonth) {
+            const outOfMonthStock = (dayInfo.month < APP_STATE.month || (APP_STATE.month === 1 && dayInfo.month === 12))
+              ? (p.initStock || 0)
+              : (dailyStockMap[APP_STATE.daysInMonth] || p.initStock || 0);
+
+            dayCells += `
+              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
+              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
+              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] max-w-[52px] border-r border-slate-300 bg-slate-50 text-slate-400 font-medium select-none">
+                ${outOfMonthStock.toLocaleString()}
+              </td>`;
+          } else {
+            const d = dayInfo.day;
+            const makeVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
+            const outVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
+            const stockVal = dailyStockMap[d];
+
+            let stockStyle = 'text-slate-800 font-semibold';
+            if (stockVal < 0) {
+              stockStyle = 'bg-rose-600 text-white font-black px-1 rounded shadow-sm';
+            } else if (stockVal < p.safeStock) {
+              stockStyle = 'text-rose-600 font-black bg-rose-50 border border-rose-300 px-1 rounded shadow-sm';
+            }
+
+            dayCells += `
+              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] ${colDayBg || 'bg-blue-50/25'}">
+                <input type="number" min="0" step="1" 
+                  value="${makeVal > 0 ? makeVal : ''}" 
+                  placeholder="-"
+                  title="${p.name} (${APP_STATE.month}/${d} 製造)"
+                  data-pid="${p.id}" data-day="${d}" data-type="make"
+                  class="make-input w-full h-7 text-center font-bold text-blue-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 text-xs px-0.5 transition">
+              </td>
+              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] ${colDayBg || 'bg-amber-50/25'}">
+                <input type="number" min="0" step="1" 
+                  value="${outVal > 0 ? outVal : ''}" 
+                  placeholder="-"
+                  title="${p.name} (${APP_STATE.month}/${d} 出庫)"
+                  data-pid="${p.id}" data-day="${d}" data-type="out"
+                  class="out-input w-full h-7 text-center font-bold text-amber-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-amber-600 text-xs px-0.5 transition">
+              </td>
+              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] max-w-[52px] border-r border-slate-300 ${colDayBg}">
+                <span class="${stockStyle} block text-right">${stockVal.toLocaleString()}</span>
+              </td>`;
+          }
+        });
+
+        bHtml += `<tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-blue-50/60 transition" id="row-p-${p.id}">
+          <td class="sticky-col-1 ${fixedColBg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
             <div class="truncate max-w-[130px]" title="${p.name}">${p.name}</div>
-            <div class="text-[9px] text-slate-400 font-normal">${p.spec || ''} <span class="text-slate-500">入:${p.packQty || 1}</span></div>
+            <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''} <span class="text-slate-600 font-medium">入:${p.packQty || 1}</span></div>
           </td>
-          <td class="sticky-col-2 bg-white px-2 py-1.5 text-right font-bold text-slate-700 text-xs border-r border-slate-300">
+          <td class="sticky-col-2 ${fixedColBg} px-2 py-1.5 text-right font-black text-slate-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
             ${(p.initStock || 0).toLocaleString()}
           </td>
-          <td class="sticky-col-3 bg-white px-2 py-1.5 text-right font-bold text-blue-600 text-xs border-r border-slate-300" id="psum-make-${p.id}">
+          <td class="sticky-col-3 ${fixedColBg} px-2 py-1.5 text-right font-black text-blue-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]" id="psum-make-${p.id}">
             ${pMakeSum.toLocaleString()}
           </td>
-          <td class="sticky-col-4 bg-white px-2 py-1.5 text-right font-bold text-amber-600 text-xs border-r-2 border-slate-400" id="psum-out-${p.id}">
+          <td class="sticky-col-4 ${fixedColBg} px-2 py-1.5 text-right font-black text-amber-700 text-xs border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]" id="psum-out-${p.id}">
             ${pOutSum.toLocaleString()}
           </td>
           ${dayCells}
@@ -742,550 +742,905 @@
       tbody.innerHTML = bHtml;
 
       // 3. テーブルフッター（日別合計行）
-      let fHtml = `<tr class="divide-x divide-slate-300 text-xs text-slate-700">
-        <td class="sticky-col-1 bg-slate-100 px-2 py-2 font-bold text-slate-800 border-r border-slate-300">日別合計 製造</td>
-        <td class="sticky-col-2 bg-slate-100 border-r border-slate-300"></td>
-        <td class="sticky-col-3 bg-slate-100 text-right px-2 py-2 text-blue-700 font-black border-r border-slate-300">${monthlyTotalMake.toLocaleString()}</td>
-        <td class="sticky-col-4 bg-slate-100 text-right px-2 py-2 text-amber-700 font-black border-r-2 border-slate-400">${monthlyTotalOut.toLocaleString()}</td>`;
+      let fHtml = `<tr class="divide-x divide-slate-400 text-xs text-slate-900 bg-slate-200">
+        <td class="sticky-col-1 bg-slate-300 px-2 py-2 font-black text-slate-900 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)]">日別合計</td>
+        <td class="sticky-col-2 bg-slate-300 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)]"></td>
+        <td class="sticky-col-3 bg-slate-300 text-right px-2 py-2 text-blue-800 font-black border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)]">${monthlyTotalMake.toLocaleString()}</td>
+        <td class="sticky-col-4 bg-slate-300 text-right px-2 py-2 text-amber-800 font-black border-r-2 border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">${monthlyTotalOut.toLocaleString()}</td>`;
 
-      days.forEach(d => {
-        const mSum = dayTotals[d].make;
-        const oSum = dayTotals[d].out;
-        fHtml += `
-          <td class="text-center py-2 font-black text-blue-700 bg-blue-50/50">${mSum > 0 ? mSum.toLocaleString() : '-'}</td>
-          <td class="text-center py-2 font-black text-amber-700 bg-amber-50/50">${oSum > 0 ? oSum.toLocaleString() : '-'}</td>
-          <td class="border-r border-slate-300 bg-slate-100"></td>`;
+      days.forEach(dayInfo => {
+        if (!dayInfo.isCurrentMonth) {
+          fHtml += `
+            <td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
+            <td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
+            <td class="border-r border-slate-400 bg-slate-200"></td>`;
+        } else {
+          const mSum = dayTotals[dayInfo.day].make;
+          const oSum = dayTotals[dayInfo.day].out;
+          fHtml += `
+            <td class="text-center py-2 font-black text-blue-800 bg-blue-100/60">${mSum > 0 ? mSum.toLocaleString() : '-'}</td>
+            <td class="text-center py-2 font-black text-amber-800 bg-amber-100/60">${oSum > 0 ? oSum.toLocaleString() : '-'}</td>
+            <td class="border-r border-slate-400 bg-slate-200"></td>`;
+        }
       });
       fHtml += `</tr>`;
       tfoot.innerHTML = fHtml;
 
-      // 4. KPIカード＆サマリーの同期
-      updateKpis(monthlyTotalMake, monthlyTotalTarget, monthlyTotalOut, totalShortAlerts);
+      // 4. KPIカード＆サマリーバーの更新
+      document.getElementById('kpiTotalMake').innerHTML = `${monthlyTotalMake.toLocaleString()} <span class="text-xs font-normal text-slate-500">c/s</span>`;
+      document.getElementById('compactMake').textContent = monthlyTotalMake.toLocaleString();
 
-      // 5. 入力イベントのアタッチ
+      const rate = monthlyTotalTarget > 0 ? Math.round((monthlyTotalMake / monthlyTotalTarget) * 100) : 0;
+      document.getElementById('kpiTargetSummary').innerHTML = `${monthlyTotalTarget.toLocaleString()} <span class="text-xs font-bold text-blue-600">(${rate}%)</span>`;
+      document.getElementById('compactTarget').textContent = monthlyTotalTarget.toLocaleString();
+      document.getElementById('compactRate').textContent = `${rate}%`;
+
+      document.getElementById('kpiTotalOut').innerHTML = `${monthlyTotalOut.toLocaleString()} <span class="text-xs font-normal text-slate-500">c/s</span>`;
+      document.getElementById('compactOut').textContent = monthlyTotalOut.toLocaleString();
+
+      const alertCardCount = document.getElementById('kpiAlertCount');
+      const alertIcon = document.getElementById('kpiAlertIcon');
+      const compactShort = document.getElementById('compactShort');
+      const banner = document.getElementById('alertBanner');
+
+      if (totalShortAlerts > 0) {
+        alertCardCount.className = 'text-lg font-black text-rose-600 tracking-tight';
+        alertCardCount.innerHTML = `${totalShortAlerts} <span class="text-xs font-normal text-slate-500">品目</span>`;
+        alertIcon.className = 'w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs';
+        alertIcon.textContent = '⚠';
+        compactShort.textContent = totalShortAlerts;
+        compactShort.className = 'text-rose-600 text-sm font-black';
+
+        banner.classList.remove('hidden');
+        document.getElementById('alertBannerTitle').textContent = `${totalShortAlerts}品目で在庫ショート（欠品・安全在庫割れ）を検知しました`;
+      } else {
+        alertCardCount.className = 'text-lg font-black text-emerald-600 tracking-tight';
+        alertCardCount.innerHTML = `0 <span class="text-xs font-normal text-slate-500">件</span>`;
+        alertIcon.className = 'w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs';
+        alertIcon.textContent = '✔';
+        compactShort.textContent = 0;
+        compactShort.className = 'text-emerald-700 text-sm font-bold';
+        banner.classList.add('hidden');
+      }
+
       attachInputEvents();
     }
 
+    // セル入力時のイベント紐付け
     function attachInputEvents() {
-      const inputs = document.querySelectorAll('.make-input, .out-input');
-      inputs.forEach(input => {
-        input.addEventListener('change', (e) => {
-          const pid = Number(e.target.dataset.pid);
-          const day = Number(e.target.dataset.day);
-          const type = e.target.dataset.type;
-          const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+      const tooltip = document.getElementById('inputAssistTooltip');
+      const activeBadge = document.getElementById('activeEditingBadge');
+      const activeText = document.getElementById('activeEditingText');
+      const tableContainer = document.getElementById('mainTable')?.parentElement;
 
-          if (!APP_STATE.matrix[pid]) APP_STATE.matrix[pid] = {};
-          if (!APP_STATE.matrix[pid][day]) APP_STATE.matrix[pid][day] = { make: 0, out: 0 };
+      const updateTooltipPos = (input) => {
+        if (!tooltip || !input) return;
+        const rect = input.getBoundingClientRect();
+        if (rect.top < 110) {
+          tooltip.style.left = `${rect.left + rect.width / 2}px`;
+          tooltip.style.top = `${rect.bottom + 6}px`;
+          tooltip.classList.remove('-translate-y-full');
+        } else {
+          tooltip.style.left = `${rect.left + rect.width / 2}px`;
+          tooltip.style.top = `${rect.top - 6}px`;
+          tooltip.classList.add('-translate-y-full');
+        }
+      };
 
-          APP_STATE.matrix[pid][day][type] = val;
+      if (tableContainer && !tableContainer._hasScrollListen) {
+        tableContainer.addEventListener('scroll', () => {
+          const activeInput = document.activeElement;
+          if (activeInput && (activeInput.classList.contains('make-input') || activeInput.classList.contains('out-input'))) {
+            updateTooltipPos(activeInput);
+          }
+        });
+        tableContainer._hasScrollListen = true;
+      }
+
+      document.querySelectorAll('.make-input, .out-input').forEach(input => {
+        input.addEventListener('focus', function() {
+          const pId = parseInt(this.dataset.pid, 10);
+          const day = parseInt(this.dataset.day, 10);
+          const type = this.dataset.type;
+          const p = APP_STATE.products.find(item => item.id === pId);
+          if (!p) return;
+
+          const dateObj = new Date(APP_STATE.year, APP_STATE.month - 1, day);
+          const dow = ['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()];
+          const isMake = (type === 'make');
+
+          const borderClass = isMake ? 'border-blue-500 shadow-blue-900/40' : 'border-amber-500 shadow-amber-900/40';
+          const typeBadge = isMake
+            ? '<span class="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">製造</span>'
+            : '<span class="bg-amber-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">出庫</span>';
+
+          tooltip.className = `fixed pointer-events-none z-50 opacity-100 transform -translate-x-1/2 transition-all duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap bg-slate-900 text-white border-2 ${borderClass}`;
+          tooltip.innerHTML = `
+            ${typeBadge}
+            <span class="text-white font-extrabold tracking-wide text-xs">${p.name}</span>
+            <span class="text-slate-400 font-normal text-[11px]">${APP_STATE.month}/${day}(${dow})</span>
+          `;
+          updateTooltipPos(this);
+
+          const row = document.getElementById(`row-p-${pId}`);
+          if (row) {
+            const nameCell = row.querySelector('.sticky-col-1');
+            if (nameCell) nameCell.classList.add('ring-2', 'ring-blue-600', 'ring-inset', 'font-black');
+          }
+
+          if (activeBadge && activeText) {
+            activeBadge.classList.remove('hidden');
+            activeBadge.classList.add('inline-flex');
+            activeText.innerHTML = `${p.name} <span class="text-slate-400 font-normal">(${APP_STATE.month}/${day} ${isMake ? '製造' : '出庫'})</span>`;
+          }
+        });
+
+        input.addEventListener('blur', function() {
+          if (tooltip) tooltip.classList.add('opacity-0');
+          const pId = parseInt(this.dataset.pid, 10);
+          const row = document.getElementById(`row-p-${pId}`);
+          if (row) {
+            const nameCell = row.querySelector('.sticky-col-1');
+            if (nameCell) nameCell.classList.remove('ring-2', 'ring-blue-600', 'ring-inset', 'font-black');
+          }
+          if (activeBadge) {
+            activeBadge.classList.add('hidden');
+            activeBadge.classList.remove('inline-flex');
+          }
+        });
+
+        input.addEventListener('change', function() {
+          const pId = parseInt(this.dataset.pid, 10);
+          const day = parseInt(this.dataset.day, 10);
+          const type = this.dataset.type;
+          const val = Math.max(0, parseInt(this.value, 10) || 0);
+
+          if (APP_STATE.matrix[pId] && APP_STATE.matrix[pId][day]) {
+            APP_STATE.matrix[pId][day][type] = val;
+          }
           renderTable();
+        });
+
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const pId = parseInt(this.dataset.pid, 10);
+            const day = this.dataset.day;
+            const type = this.dataset.type;
+            const nextInput = document.querySelector(`input[data-pid="${pId + 1}"][data-day="${day}"][data-type="${type}"]`);
+            if (nextInput) nextInput.focus();
+          }
         });
       });
     }
 
-    function updateKpis(totalMake, totalTarget, totalOut, shortCount) {
-      // 展開カード
-      document.getElementById('cardTotalMake').innerText = totalMake.toLocaleString();
-      document.getElementById('cardTotalTarget').innerText = totalTarget.toLocaleString();
-      document.getElementById('cardTotalOut').innerText = totalOut.toLocaleString();
-      document.getElementById('cardShortAlerts').innerText = shortCount;
+    // CSV内容の解析
+    function parseCsvContent(text) {
+      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+      if (lines.length < 2) return null;
 
-      const rate = totalTarget > 0 ? Math.round((totalMake / totalTarget) * 100) : 0;
-      const rateEl = document.getElementById('cardPlanRate');
-      rateEl.innerText = `${rate}%`;
-      if (rate >= 100) {
-        rateEl.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded';
-      } else {
-        rateEl.className = 'text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded';
-      }
-
-      // 折りたたみバー
-      document.getElementById('barMakeSum').innerText = totalMake.toLocaleString();
-      document.getElementById('barTargetSum').innerText = totalTarget.toLocaleString();
-      document.getElementById('barRate').innerText = `${rate}%`;
-      document.getElementById('barOutSum').innerText = totalOut.toLocaleString();
-      document.getElementById('barShortCount').innerText = shortCount;
-
-      // 欠品警告バナー
-      const banner = document.getElementById('alertBanner');
-      const cardWrap = document.getElementById('cardShortIconWrap');
-      const cardNum = document.getElementById('cardShortAlerts');
-
-      if (shortCount > 0) {
-        banner.classList.remove('hidden');
-        document.getElementById('alertTitle').innerText = `${shortCount}品目で在庫ショート（欠品・安全在庫割れ）を検知しました`;
-        cardWrap.className = 'w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center';
-        cardNum.className = 'text-2xl font-black text-rose-600 tracking-tight';
-      } else {
-        banner.classList.add('hidden');
-        cardWrap.className = 'w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center';
-        cardNum.className = 'text-2xl font-black text-emerald-600 tracking-tight';
-      }
-    }
-
-    /**
-     * CSVファイル読み込み処理（Shift-JIS / UTF-8 自動判別・ケース数をそのまま出庫へ反映）
-     */
-    let PENDING_CSV_SHIPMENTS = [];
-
-    function handleCsvFile(file) {
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const buffer = e.target.result;
-          let text = '';
-
-          // 1. まずUTF-8でデコード試行（文字化け判定）
-          try {
-            const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
-            text = utf8Decoder.decode(buffer);
-          } catch (err) {
-            // UTF-8で例外が出た場合はShift-JISでデコード
-            const sjisDecoder = new TextDecoder('shift-jis');
-            text = sjisDecoder.decode(buffer);
-          }
-
-          parseCsvContent(text, file.name);
-        } catch (err) {
-          console.error('CSV parse error:', err);
-          showToast('CSV解析エラー: ' + err.message, 'error');
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function parseCsvContent(csvText, fileName) {
-      const lines = csvText.split(/\r\n|\n|\r/).filter(l => l.trim().length > 0);
-      if (lines.length < 2) {
-        showToast('CSVデータが空か行数が不足しています', 'error');
-        return;
-      }
-
-      // ファイル名から年月判定（例: 2026年10月）
-      const fnMatch = fileName.match(/(\d{4})[年\-_]?(\d{1,2})/);
-      let targetYear = APP_STATE.year;
-      let targetMonth = APP_STATE.month;
-      if (fnMatch) {
-        targetYear = parseInt(fnMatch[1], 10);
-        targetMonth = parseInt(fnMatch[2], 10);
-      }
-
-      // 数値クリーニング関数（全角数字・カンマ・スペース対応）
-      function cleanNum(val) {
-        if (val === undefined || val === null) return 0;
-        const s = String(val).normalize('NFKC').replace(/,/g, '').trim();
-        const n = parseInt(s, 10);
-        return isNaN(n) ? 0 : n;
-      }
-
-      // 簡易CSVパース（カンマ区切り・引用符対応）
-      function parseLine(line) {
-        const row = [];
+      const rows = lines.map(line => {
+        const result = [];
         let cur = '';
         let inQuote = false;
         for (let i = 0; i < line.length; i++) {
-          const c = line[i];
-          if (c === '"') {
-            if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
-            else { inQuote = !inQuote; }
-          } else if (c === ',' && !inQuote) {
-            row.push(cur.trim());
+          const ch = line[i];
+          if (ch === '"') inQuote = !inQuote;
+          else if (ch === ',' && !inQuote) {
+            result.push(cur.trim());
             cur = '';
           } else {
-            cur += c;
+            cur += ch;
           }
         }
-        row.push(cur.trim());
-        return row;
-      }
+        result.push(cur.trim());
+        return result;
+      });
 
-      const rows = lines.map(parseLine);
-      const header = rows[0];
+      const header = rows[0].map(h => String(h).normalize('NFKC').trim());
+      
+      let colCode = -1;
+      let colName = -1;
+      const dayColMap = {};
 
-      // 「ケース数1」「ケース数2」列の検出（全角・半角・表記ゆれ対応）
-      const caseDayCols = {}; // colIdx -> day
       header.forEach((col, idx) => {
-        // 全角数字や記号をNFKCで正規化（例: "ケース数１" -> "ケース数1"）
-        const norm = String(col || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+        if (/商品コード|ｺｰﾄﾞ|コード/i.test(col)) colCode = idx;
+        if (/商品名|品名|名称/i.test(col)) colName = idx;
 
-        // パターン1: ケース数1, ケース1, ケース01, ケース数(1)
-        let m = norm.match(/ケース(?:数)?\(?(\d{1,2})\)?/);
-        // パターン2: 1日ケース, 1ケース
-        if (!m) m = norm.match(/^(\d{1,2})日?(?:ケース|cs)/);
-        // パターン3: case1, caseqty1
-        if (!m) m = norm.match(/case(?:qty)?(\d{1,2})/);
-
+        const m = col.match(/ケース(?:数)?\s*(\d{1,2})/i);
         if (m) {
           const d = parseInt(m[1], 10);
-          if (d >= 1 && d <= 31) caseDayCols[idx] = d;
+          if (d >= 1 && d <= 31) {
+            dayColMap[d] = idx;
+          }
         }
       });
 
-      // フォールバック判定：もし正規表現で検出できなかった場合、画像通りの「バラ数 / ケース数」の2列並びから自動特定
-      if (Object.keys(caseDayCols).length === 0) {
-        header.forEach((col, idx) => {
-          const norm = String(col || '').normalize('NFKC').replace(/\s+/g, '');
-          if (norm.includes('ケース') && idx >= 6) {
-            // G列(idx 6)がバラ1、H列(idx 7)がケース1の構成
-            const guessedDay = Math.floor((idx - 5) / 2);
-            if (guessedDay >= 1 && guessedDay <= 31) {
-              caseDayCols[idx] = guessedDay;
-            }
-          }
-        });
+      if (Object.keys(dayColMap).length === 0) {
+        let detectedDay = 1;
+        for (let c = 7; c < header.length && detectedDay <= 31; c += 2) {
+          dayColMap[detectedDay] = c;
+          detectedDay++;
+        }
       }
 
-      const matchedResults = [];
-      const productDailyOut = {}; // pid -> { day: qty }
+      const matchedData = [];
+      const codeLookup = {
+        112: 1, 116: 2, 162: 2, 23: 3, 31: 4, 33: 5, 163: 5,
+        164: 6, 37: 6, 136: 7, 161: 7, 169: 12, 170: 13, 171: 14
+      };
 
-      APP_STATE.products.forEach(p => {
-        productDailyOut[p.id] = {};
-      });
-
-      // 行の走査
       for (let r = 1; r < rows.length; r++) {
         const row = rows[r];
-        if (!row || row.length < 2) continue;
+        if (!row || row.length < 3) continue;
 
-        // 商品コード（C列相当）と商品名（D列相当）を取得（全角正規化）
-        const pCode = String(row[2] || '').normalize('NFKC').trim();
-        const pName = String(row[3] || row[1] || '').normalize('NFKC').trim();
+        const rowCode = cleanNum(row[colCode !== -1 ? colCode : 2]);
+        const rowName = (colName !== -1 ? row[colName] : (row[3] || '')).normalize('NFKC').trim();
 
-        // 商品マスタとの照合
-        const matchedProduct = APP_STATE.products.find(p => {
-          if (p.codes && p.codes.map(c => String(c).normalize('NFKC')).includes(pCode)) return true;
-          if (String(p.id) === pCode) return true;
-          // 品名での部分一致
-          const cleanP = p.name.normalize('NFKC').replace(/[\s\-_]/g, '').toLowerCase();
-          const cleanN = pName.replace(/[\s\-_]/g, '').toLowerCase();
-          return cleanN.includes(cleanP) || cleanP.includes(cleanN);
-        });
+        let matchedP = null;
+        if (codeLookup[rowCode]) {
+          matchedP = APP_STATE.products.find(p => p.id === codeLookup[rowCode]);
+        }
+        if (!matchedP && rowName) {
+          matchedP = APP_STATE.products.find(p => {
+            const cleanPName = p.name.normalize('NFKC').replace(/\s+/g, '');
+            const cleanRName = rowName.replace(/\s+/g, '');
+            return cleanRName.includes(cleanPName) || cleanPName.includes(cleanRName);
+          });
+        }
 
-        if (matchedProduct) {
-          let rowOutTotal = 0;
-          Object.keys(caseDayCols).forEach(colIdx => {
-            const day = caseDayCols[colIdx];
-            const caseQty = cleanNum(row[colIdx]);
-            if (caseQty > 0) {
-              productDailyOut[matchedProduct.id][day] = (productDailyOut[matchedProduct.id][day] || 0) + caseQty;
-              rowOutTotal += caseQty;
-            }
+        if (matchedP) {
+          const dailyCases = {};
+          let totalCases = 0;
+
+          Object.keys(dayColMap).forEach(dStr => {
+            const dayNum = parseInt(dStr, 10);
+            const colIdx = dayColMap[dayNum];
+            const caseVal = cleanNum(row[colIdx]);
+
+            dailyCases[dayNum] = caseVal;
+            totalCases += caseVal;
           });
 
-          // プレビュー用リストへ追加
-          const existing = matchedResults.find(m => m.id === matchedProduct.id);
-          if (existing) {
-            existing.totalOut += rowOutTotal;
-          } else {
-            matchedResults.push({
-              id: matchedProduct.id,
-              name: matchedProduct.name,
-              csvName: pName || pCode,
-              totalOut: rowOutTotal
-            });
-          }
+          matchedData.push({
+            productId: matchedP.id,
+            productName: matchedP.name,
+            csvName: rowName || `コード:${rowCode}`,
+            dailyCases: dailyCases,
+            totalCases: totalCases
+          });
         }
       }
 
-      // プレビュー表示
-      const previewBox = document.getElementById('csvPreviewBox');
-      const listEl = document.getElementById('csvPreviewList');
-      const matchCountEl = document.getElementById('csvMatchCount');
-      const applyBtn = document.getElementById('applyCsvDataBtn');
+      return matchedData;
+    }
 
-      if (matchedResults.length > 0) {
-        previewBox.classList.remove('hidden');
-        matchCountEl.innerText = `${matchedResults.length}品目 照合成功`;
-        let phtml = '';
-        matchedResults.forEach(m => {
-          phtml += `<div class="p-2 flex items-center justify-between hover:bg-slate-50">
-            <div>
-              <span class="font-bold text-slate-800">${m.name}</span>
-              <span class="text-[10px] text-slate-400 ml-1.5">(CSV品名: ${m.csvName})</span>
-            </div>
-            <span class="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${m.totalOut.toLocaleString()} c/s</span>
-          </div>`;
-        });
-        listEl.innerHTML = phtml;
-        applyBtn.disabled = false;
+    // CSVモーダルの開閉とファイル読み込み設定
+    function setupCsvModal() {
+      const modal = document.getElementById('csvModal');
+      const fileInput = document.getElementById('csvFileInput');
+      const btnApply = document.getElementById('btnApplyCsvData');
+      const previewArea = document.getElementById('csvPreviewArea');
+      const previewList = document.getElementById('csvPreviewList');
+      const matchCount = document.getElementById('csvMatchCount');
 
-        PENDING_CSV_SHIPMENTS = {
-          year: targetYear,
-          month: targetMonth,
-          dailyData: productDailyOut
+      document.getElementById('btnOpenCsvModal').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        fileInput.value = '';
+        btnApply.disabled = true;
+        previewArea.classList.add('hidden');
+        APP_STATE.parsedCsvResult = null;
+      });
+
+      const closeModal = () => modal.classList.add('hidden');
+      document.getElementById('btnCloseCsvModal').addEventListener('click', closeModal);
+      document.getElementById('btnCancelCsvModal').addEventListener('click', closeModal);
+
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const buffer = evt.target.result;
+          let text = '';
+          try {
+            const decoder = new TextDecoder('shift-jis');
+            text = decoder.decode(buffer);
+            if (text.includes('')) throw new Error('Shift-JIS miss');
+          } catch (err) {
+            const decoder = new TextDecoder('utf-8');
+            text = decoder.decode(buffer);
+          }
+
+          const parsed = parseCsvContent(text);
+          if (parsed && parsed.length > 0) {
+            APP_STATE.parsedCsvResult = parsed;
+            btnApply.disabled = false;
+            previewArea.classList.remove('hidden');
+            matchCount.textContent = `${parsed.length}品目 照合成功`;
+
+            previewList.innerHTML = parsed.map(item => `
+              <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                <div>
+                  <span class="font-bold text-slate-800">${item.productName}</span>
+                  <span class="text-[10px] text-slate-400 ml-1">(${item.csvName})</span>
+                </div>
+                <span class="font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                  出庫計: ${item.totalCases.toLocaleString()} c/s
+                </span>
+              </div>
+            `).join('');
+          } else {
+            btnApply.disabled = true;
+            previewArea.classList.remove('hidden');
+            matchCount.textContent = '照合失敗';
+            previewList.innerHTML = `<div class="text-rose-600 font-bold p-2">該当する品目または日付列が見つかりませんでした。列名をご確認ください。</div>`;
+          }
         };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnApply.addEventListener('click', function() {
+        if (!APP_STATE.parsedCsvResult) return;
+
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            if (APP_STATE.matrix[p.id] && APP_STATE.matrix[p.id][d]) {
+              APP_STATE.matrix[p.id][d].out = 0;
+            }
+          }
+        });
+
+        APP_STATE.parsedCsvResult.forEach(item => {
+          const pId = item.productId;
+          Object.keys(item.dailyCases).forEach(dStr => {
+            const dayNum = parseInt(dStr, 10);
+            if (APP_STATE.matrix[pId] && APP_STATE.matrix[pId][dayNum]) {
+              APP_STATE.matrix[pId][dayNum].out = item.dailyCases[dayNum];
+            }
+          });
+        });
+
+        APP_STATE.currentPeriod = 'all';
+        renderPeriodTabs();
+        renderTable();
+        closeModal();
+        showToast(`${APP_STATE.parsedCsvResult.length}品目の出庫データを最新値で上書き反映しました`);
+      });
+
+      document.getElementById('btnLoadSampleCsv').addEventListener('click', function() {
+        const sampleRecords = [
+          { productId: 1, dailyCases: { 1: 568, 2: 410, 3: 322, 5: 493, 6: 185, 7: 447, 8: 507, 9: 440, 10: 371, 12: 20, 13: 346, 14: 428, 15: 592, 16: 439, 17: 359, 19: 276, 20: 82, 21: 30 } },
+          { productId: 2, dailyCases: { 2: 1, 6: 1, 7: 1, 8: 6, 9: 2, 13: 6, 16: 3 } },
+          { productId: 3, dailyCases: { 1: 7, 2: 19, 3: 6, 5: 42, 6: 13, 7: 53, 8: 10, 9: 39, 10: 17, 12: 1, 13: 17, 14: 4, 15: 15, 16: 19, 17: 5, 19: 14, 20: 10 } },
+          { productId: 4, dailyCases: { 1: 112, 2: 28, 3: 7, 5: 22, 6: 26, 7: 46, 8: 8, 9: 12, 10: 7, 12: 2, 13: 252, 14: 78, 15: 23, 16: 42, 17: 8, 19: 7, 20: 36 } },
+          { productId: 5, dailyCases: { 1: 140, 2: 20, 5: 40, 7: 20, 8: 144, 9: 80, 13: 1400, 14: 20, 15: 142, 16: 20, 20: 36, 21: 30 } },
+          { productId: 7, dailyCases: { 9: 960 } },
+          { productId: 8, dailyCases: { 1: 42, 2: 75, 3: 6, 5: 256, 6: 94, 7: 41, 8: 38, 9: 49, 10: 2, 13: 217, 14: 68, 15: 86, 16: 229, 19: 134, 20: 44 } },
+          { productId: 9, dailyCases: { 1: 981, 3: 10, 5: 99, 6: 55, 7: 2, 8: 85, 9: 160, 10: 2, 13: 699, 14: 55, 15: 51, 16: 631, 19: 1, 20: 321, 21: 55 } }
+        ];
+
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            if (APP_STATE.matrix[p.id] && APP_STATE.matrix[p.id][d]) {
+              APP_STATE.matrix[p.id][d].out = 0;
+            }
+          }
+        });
+
+        sampleRecords.forEach(s => {
+        Object.keys(s.dailyCases).forEach(d => {
+          if (APP_STATE.matrix[s.productId]?.[d]) {
+            APP_STATE.matrix[s.productId][d].out = s.dailyCases[d];
+          }
+        });
+      });
+
+      APP_STATE.currentPeriod = 'all';
+      renderPeriodTabs();
+      renderTable();
+      closeModal();
+      showToast('10月度のサンプル出庫データを反映しました');
+    });
+  }
+
+  // 印刷専用テーブルの生成（品目名＋規格＋週製造計＋月〜日製造数のみ、A4横1枚用）
+  function buildPrintTable(days) {
+    const table = document.getElementById('printTableDynamic');
+    if (!table) return;
+
+    const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'];
+    
+    // 1. ヘッダー生成（月〜日の7日間 ＋ 週製造計）
+    let headHtml = `<thead>
+      <tr class="bg-slate-200 text-slate-900 border-b border-slate-800">
+        <th style="width: 24%;" class="border border-slate-800 px-2 py-1 text-left font-black">品目名</th>
+        <th style="width: 10%;" class="border border-slate-800 px-1 py-1 text-center font-bold">規格</th>
+        <th style="width: 10%;" class="border border-slate-800 px-1 py-1 text-right bg-blue-100/80 font-black">週製造計</th>`;
+
+    days.forEach(dayInfo => {
+      const dow = dayOfWeekStr[dayInfo.dow];
+      let bg = 'bg-slate-100';
+      if (dayInfo.dow === 0) bg = 'bg-rose-100/80 text-rose-950 font-black';
+      else if (dayInfo.dow === 6) bg = 'bg-blue-100/80 text-blue-950 font-black';
+
+      headHtml += `<th style="width: 8%;" class="border border-slate-800 px-1 py-1 text-center ${bg}">
+        <div class="leading-tight font-black">${dayInfo.month}/${dayInfo.day}</div>
+        <div class="text-[9px] font-bold">(${dow})</div>
+      </th>`;
+    });
+    headHtml += `</tr></thead>`;
+
+    // 2. ボディ生成（14品目の製造予定のみ）
+    let bodyHtml = `<tbody>`;
+    const dayMakeTotals = {};
+    days.forEach(d => { dayMakeTotals[d.day] = 0; });
+    let weeklyGrandTotal = 0;
+
+    APP_STATE.products.forEach((p, idx) => {
+      let pWeeklyMake = 0;
+      let dayCells = '';
+
+      days.forEach(dayInfo => {
+        let makeVal = 0;
+        if (dayInfo.isCurrentMonth) {
+          makeVal = APP_STATE.matrix[p.id]?.[dayInfo.day]?.make || 0;
+          dayMakeTotals[dayInfo.day] += makeVal;
+        }
+        pWeeklyMake += makeVal;
+
+        const displayVal = makeVal > 0 ? makeVal.toLocaleString() : '-';
+        const cellStyle = makeVal > 0 ? 'font-black text-black text-center' : 'text-slate-300 text-center';
+        dayCells += `<td class="border border-slate-800 px-1 py-0.5 ${cellStyle}">${displayVal}</td>`;
+      });
+
+      weeklyGrandTotal += pWeeklyMake;
+      const weeklyBold = pWeeklyMake > 0 ? 'font-black text-blue-950 bg-blue-50/50 text-right' : 'text-slate-400 text-right';
+      const rowBg = idx % 2 === 1 ? 'bg-slate-50' : 'bg-white';
+
+      bodyHtml += `<tr class="${rowBg}">
+        <td class="border border-slate-800 px-2 py-0.5 font-bold truncate text-xs text-left">${p.name}</td>
+        <td class="border border-slate-800 px-1 py-0.5 text-center text-[10px] text-slate-700">${p.spec || ''}</td>
+        <td class="border border-slate-800 px-1 py-0.5 ${weeklyBold}">${pWeeklyMake > 0 ? pWeeklyMake.toLocaleString() : '-'}</td>
+        ${dayCells}
+      </tr>`;
+    });
+    bodyHtml += `</tbody>`;
+
+    // 3. フッター生成（日別合計行）
+    let footHtml = `<tfoot>
+      <tr class="bg-slate-300 font-black border-t-2 border-slate-800">
+        <td colspan="2" class="border border-slate-800 px-2 py-1 text-center text-xs">日別合計 製造予定数</td>
+        <td class="border border-slate-800 px-1 py-1 text-right text-xs bg-blue-200 text-blue-950">${weeklyGrandTotal.toLocaleString()}</td>`;
+
+    days.forEach(dayInfo => {
+      const total = dayMakeTotals[dayInfo.day] || 0;
+      footHtml += `<td class="border border-slate-800 px-1 py-1 text-center text-xs ${total > 0 ? 'text-black' : 'text-slate-400'}">
+        ${total > 0 ? total.toLocaleString() : '-'}
+      </td>`;
+    });
+    footHtml += `</tr></tfoot>`;
+
+    table.innerHTML = headHtml + bodyHtml + footHtml;
+  }
+
+  // スプレッドシート（GAS）からのデータ読み込み
+  function loadDataFromGas() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        document.getElementById('connectionBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GAS接続中`;
+        document.getElementById('connectionBadge').className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1';
+        APP_STATE.isGasConnected = true;
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              if (res.products) APP_STATE.products = res.products;
+              if (res.matrix) APP_STATE.matrix = res.matrix;
+              APP_STATE.daysInMonth = res.daysInMonth || new Date(APP_STATE.year, APP_STATE.month, 0).getDate();
+              renderPeriodTabs();
+              renderTable();
+              showToast(`${APP_STATE.year}年${APP_STATE.month}月のデータをシートから取得しました`);
+            }
+          })
+          .withFailureHandler(function(err) {
+            console.warn('GAS Fetch error:', err);
+            renderPeriodTabs();
+            renderTable();
+          })
+          .apiGetInitialData(APP_STATE.year, APP_STATE.month);
       } else {
-        previewBox.classList.remove('hidden');
-        matchCountEl.innerText = '該当品目なし';
-        listEl.innerHTML = '<div class="p-3 text-center text-slate-400">該当する商品出庫データが検出されませんでした。列構成をご確認ください。</div>';
-        applyBtn.disabled = true;
-        PENDING_CSV_SHIPMENTS = null;
+        document.getElementById('connectionBadge').innerHTML = `● プレビューモード`;
+        document.getElementById('connectionBadge').className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300';
+        APP_STATE.isGasConnected = false;
+        renderPeriodTabs();
+        renderTable();
       }
     }
 
-    function initEvents() {
-      // 1. 年月セレクターの初期化
-      const selector = document.getElementById('monthSelector');
-      selector.innerHTML = '';
-      for (let m = 8; m <= 12; m++) {
-        const opt = document.createElement('option');
-        opt.value = `2026-${m}`;
-        opt.innerText = `2026年${m}月度`;
-        if (m === APP_STATE.month) opt.selected = true;
-        selector.appendChild(opt);
-      }
-
-      selector.addEventListener('change', (e) => {
-        const [y, m] = e.target.value.split('-').map(Number);
-        switchTargetMonth(y, m);
+    // 初期イベントリスナーの登録
+    function setupEventListeners() {
+      document.getElementById('btnPrevMonth').addEventListener('click', () => {
+        if (APP_STATE.month === 1) {
+          APP_STATE.year--;
+          APP_STATE.month = 12;
+        } else {
+          APP_STATE.month--;
+        }
+        document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+        initMatrix();
+        renderPeriodTabs();
+        loadDataFromGas();
       });
 
-      document.getElementById('prevMonthBtn').onclick = () => {
-        let m = APP_STATE.month - 1;
-        let y = APP_STATE.year;
-        if (m < 1) { m = 12; y--; }
-        switchTargetMonth(y, m);
-      };
-
-      document.getElementById('nextMonthBtn').onclick = () => {
-        let m = APP_STATE.month + 1;
-        let y = APP_STATE.year;
-        if (m > 12) { m = 1; y++; }
-        switchTargetMonth(y, m);
-      };
-
-      // 2. 週切り替えタブ
-      document.querySelectorAll('.week-tab').forEach(tab => {
-        tab.onclick = () => {
-          document.querySelectorAll('.week-tab').forEach(t => {
-            t.className = 'week-tab px-3 py-1 rounded-md transition text-slate-600 hover:text-slate-900';
-          });
-          tab.className = 'week-tab active bg-blue-600 text-white px-3 py-1 rounded-md shadow-sm transition';
-          APP_STATE.currentRange = tab.dataset.range;
-          renderTable();
-        };
+      document.getElementById('btnNextMonth').addEventListener('click', () => {
+        if (APP_STATE.month === 12) {
+          APP_STATE.year++;
+          APP_STATE.month = 1;
+        } else {
+          APP_STATE.month++;
+        }
+        document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+        initMatrix();
+        renderPeriodTabs();
+        loadDataFromGas();
       });
 
-      // 3. KPIカードの開閉＆ピン留め
-      const collapseBtn = document.getElementById('collapseKpiBtn');
-      const expandBtn = document.getElementById('expandKpiBtn');
-      const pinBtn = document.getElementById('pinKpiBtn');
-      const kpiArea = document.getElementById('kpiArea');
-      const kpiCards = document.getElementById('kpiCardsWrapper');
-      const kpiBar = document.getElementById('kpiCollapsedBar');
-
-      collapseBtn.onclick = () => {
-        kpiCards.classList.add('hidden');
-        kpiBar.classList.remove('hidden');
-      };
-
-      expandBtn.onclick = () => {
-        kpiBar.classList.add('hidden');
-        kpiCards.classList.remove('hidden');
-      };
-
-      pinBtn.onclick = () => {
-        APP_STATE.kpiPinned = !APP_STATE.kpiPinned;
-        if (APP_STATE.kpiPinned) {
-          kpiArea.classList.add('kpi-pinned');
-          document.getElementById('pinKpiText').innerText = '固定を解除';
-        } else {
-          kpiArea.classList.remove('kpi-pinned');
-          document.getElementById('pinKpiText').innerText = '上部に固定';
-        }
-      };
-
-      // 4. アラートバー閉じる
-      document.getElementById('closeAlertBtn').onclick = () => {
-        document.getElementById('alertBanner').classList.add('hidden');
-      };
-
-      // 5. 保存＆再読込
-      document.getElementById('savePlanBtn').onclick = saveDataToGas;
-      document.getElementById('reloadBtn').onclick = () => {
-        if (APP_STATE.isGasEnv) {
-          loadDataFromGas(APP_STATE.year, APP_STATE.month);
-        } else {
-          switchTargetMonth(APP_STATE.year, APP_STATE.month);
-        }
-      };
-
-      // 6. 出庫クリア
-      document.getElementById('clearOutBtn').onclick = () => {
+      document.getElementById('btnAutoAllocate').addEventListener('click', () => {
         APP_STATE.products.forEach(p => {
+          let workDays = 0;
           for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            if (APP_STATE.matrix[p.id]?.[d]) {
+            const dow = new Date(APP_STATE.year, APP_STATE.month - 1, d).getDay();
+            if (dow !== 0 && dow !== 6) workDays++;
+          }
+          const dailyAvg = workDays > 0 ? Math.round((p.target || 0) / workDays) : 0;
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            const dow = new Date(APP_STATE.year, APP_STATE.month - 1, d).getDay();
+            if (dow !== 0 && dow !== 6) {
+              APP_STATE.matrix[p.id][d].out = dailyAvg;
+            } else {
               APP_STATE.matrix[p.id][d].out = 0;
             }
           }
         });
         renderTable();
-        showToast('出庫予定数をすべてクリアしました', 'info');
-      };
+        showToast('目標値から平日出庫を均等割り振りました');
+      });
 
-      // 7. 目標から出庫を仮計算
-      document.getElementById('autoFillBtn').onclick = () => {
+      document.getElementById('btnClearOutputs').addEventListener('click', () => {
         APP_STATE.products.forEach(p => {
-          const dailyAvg = Math.round((p.target || 0) / APP_STATE.daysInMonth);
           for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            if (!APP_STATE.matrix[p.id]) APP_STATE.matrix[p.id] = {};
-            if (!APP_STATE.matrix[p.id][d]) APP_STATE.matrix[p.id][d] = { make: 0, out: 0 };
-            APP_STATE.matrix[p.id][d].out = dailyAvg;
+            APP_STATE.matrix[p.id][d].out = 0;
           }
         });
         renderTable();
-        showToast('月間目標数から日別出庫数を按分してセットしました', 'success');
-      };
+        showToast('当月の出庫予定・実績をクリアしました');
+      });
 
-      // 8. CSVモーダル操作
-      const modal = document.getElementById('csvModal');
-      document.getElementById('openCsvModalBtn').onclick = () => {
-        modal.classList.remove('hidden');
-      };
-      document.getElementById('closeCsvModalBtn').onclick = () => {
-        modal.classList.add('hidden');
-      };
-      document.getElementById('cancelCsvModalBtn').onclick = () => {
-        modal.classList.add('hidden');
-      };
+      document.getElementById('btnReload').addEventListener('click', () => {
+      loadDataFromGas();
+    });
 
-      document.getElementById('csvFileInput').onchange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-          handleCsvFile(e.target.files[0]);
+    // 週間製造予定の印刷イベント（表示中の週の専用表を組み立てて印刷）
+    const btnPrint = document.getElementById('btnPrintWeekly');
+    if (btnPrint) {
+      btnPrint.addEventListener('click', () => {
+        const weeks = getMonthWeeks(APP_STATE.year, APP_STATE.month);
+        let periodLabel = '全日一覧';
+        if (APP_STATE.currentPeriod !== 'all') {
+          const found = weeks.find(w => w.id === APP_STATE.currentPeriod);
+          if (found) periodLabel = found.label;
+        } else {
+          periodLabel = '全日一覧';
         }
-      };
 
-      // CSVデータ画面反映
-      document.getElementById('applyCsvDataBtn').onclick = () => {
-        if (!PENDING_CSV_SHIPMENTS) return;
+        const printTitle = document.getElementById('printTitleText');
+        if (printTitle) {
+          printTitle.textContent = `${APP_STATE.year}年${APP_STATE.month}月度 週間製造予定表 【${periodLabel}】`;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const printDate = document.getElementById('printDateText');
+        if (printDate) {
+          printDate.textContent = `出力日時: ${dateStr}`;
+        }
 
-        // 全日一覧タブへ自動切り替え
-        APP_STATE.currentRange = 'all';
-        document.querySelectorAll('.week-tab').forEach(t => {
-          t.className = (t.dataset.range === 'all')
-            ? 'week-tab active bg-blue-600 text-white px-3 py-1 rounded-md shadow-sm transition'
-            : 'week-tab px-3 py-1 rounded-md transition text-slate-600 hover:text-slate-900';
-        });
+        // 表示中の週の7日間（または全日）の製造予定専用テーブルを構築
+        const days = getDisplayDays();
+        buildPrintTable(days);
 
-        // 当月の既存出庫数を自動リセット（重複加算を防止し、常に最新データでクリーンに上書き）
+        // レンダリング完了後に印刷ダイアログを表示
+        setTimeout(() => {
+          window.print();
+        }, 50);
+      });
+    }
+
+    document.getElementById('btnSaveToSheet').addEventListener('click', () => {
+        const records = [];
         APP_STATE.products.forEach(p => {
           for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            if (APP_STATE.matrix[p.id]?.[d]) {
-              APP_STATE.matrix[p.id][d].out = 0;
+            const mVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
+            if (mVal > 0) {
+              records.push({ day: d, productId: p.id, productName: p.name, make: mVal });
             }
           }
         });
 
-        // マトリクスへ流し込み（最新CSVのデータで上書き）
-        const daily = PENDING_CSV_SHIPMENTS.dailyData;
-        let appliedCount = 0;
-        Object.keys(daily).forEach(pidStr => {
-          const pid = Number(pidStr);
-          Object.keys(daily[pid]).forEach(dayStr => {
-            const day = Number(dayStr);
-            const qty = daily[pid][day];
-            if (!APP_STATE.matrix[pid]) APP_STATE.matrix[pid] = {};
-            if (!APP_STATE.matrix[pid][day]) APP_STATE.matrix[pid][day] = { make: 0, out: 0 };
-            APP_STATE.matrix[pid][day].out = qty;
-            appliedCount++;
-          });
-        });
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(function(res) {
+              if (res && res.success) {
+                showToast(`計画データ(${res.count}件)を日別製造計画シートへ保存しました`);
+              } else {
+                showToast('保存に失敗しました: ' + (res ? res.message : 'エラー'), '⚠');
+              }
+            })
+            .apiSaveDailyPlans(records, APP_STATE.year, APP_STATE.month);
+        } else {
+          showToast(`【プレビュー】${records.length}件の計画を保存しました（モック）`);
+        }
+      });
 
-        modal.classList.add('hidden');
-        renderTable();
-        showToast(`最新出庫データ（${appliedCount}件）で上書き反映しました！`, 'success');
-      };
+      const kpiBar = document.getElementById('kpiBar');
+      const cardsArea = document.getElementById('kpiCardsArea');
+      const btnToggle = document.getElementById('btnToggleKpi');
+      const btnPin = document.getElementById('btnPinKpi');
 
-      // テスト用サンプルデータ流し込み
-      document.getElementById('testCsvSampleBtn').onclick = () => {
-        const sampleCsv = `倉庫コード,倉庫名,商品コード,商品名,バラ単位,ケース単位,ケース数1,ケース数2,ケース数3,ケース数5,ケース数6,ケース数7,ケース数8,ケース数9,ケース数10
-0,全体,112,おいしい氷3kg,個,ケース,568,410,322,493,185,447,507,440,371
-0,全体,116,おいしい氷アイス,ケース,ケース,0,1,0,0,1,1,6,2,0
-0,全体,23,博多純氷カチ割,個,ケース,7,19,6,42,13,53,10,39,17
-0,全体,31,おいしい氷,個,ケース,112,28,7,22,26,46,8,12,7
-0,全体,33,ドンキホーテ極氷,ケース,ケース,140,20,0,40,0,20,144,80,0
-0,全体,136,CGC 氷 1Kg,ケース,ケース,0,0,0,0,0,0,0,960,0
-0,全体,8,おいしい氷2kgチャック,個,ケース,42,75,6,256,94,41,38,49,2
-0,全体,154,おいしい氷1.1kg,個,ケース,981,0,10,99,55,2,85,160,2`;
-        parseCsvContent(sampleCsv, '月間出庫実績2026年10月.csv');
-      };
+      btnToggle.addEventListener('click', () => {
+        APP_STATE.isKpiCollapsed = !APP_STATE.isKpiCollapsed;
+        if (APP_STATE.isKpiCollapsed) {
+          cardsArea.classList.add('hidden');
+          document.getElementById('collapseIcon').textContent = '▲';
+          document.getElementById('collapseText').textContent = 'カードを展開';
+        } else {
+          cardsArea.classList.remove('hidden');
+          document.getElementById('collapseIcon').textContent = '▼';
+          document.getElementById('collapseText').textContent = 'カードを閉じる';
+        }
+      });
 
-      // 9. CSVエクスポート
-      document.getElementById('exportCsvBtn').onclick = () => {
-        let csv = '商品ID,商品名,月初在庫,安全在庫,月間目標,' + Array.from({ length: APP_STATE.daysInMonth }, (_, i) => `${i + 1}日製造,${i + 1}日出庫,${i + 1}日残数`).join(',') + '\r\n';
+      btnPin.addEventListener('click', () => {
+        APP_STATE.isKpiPinned = !APP_STATE.isKpiPinned;
+        if (APP_STATE.isKpiPinned) {
+          kpiBar.classList.add('fixed-pinned');
+          document.getElementById('pinText').textContent = '固定解除';
+        } else {
+          kpiBar.classList.remove('fixed-pinned');
+          document.getElementById('pinText').textContent = '上部に固定';
+        }
+      });
+
+      document.getElementById('btnExportCsv').addEventListener('click', () => {
+        let csv = '商品ID,商品名,月初在庫,累計製造,累計出庫';
+        for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+          csv += `,${d}日製造,${d}日出庫,${d}日残数`;
+        }
+        csv += '\n';
+
         APP_STATE.products.forEach(p => {
-          let row = [p.id, `"${p.name}"`, p.initStock, p.safeStock, p.target];
-          let curStock = p.initStock;
+          let cur = p.initStock || 0;
+          let mSum = 0, oSum = 0;
+          let dayParts = '';
           for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
             const m = APP_STATE.matrix[p.id]?.[d]?.make || 0;
             const o = APP_STATE.matrix[p.id]?.[d]?.out || 0;
-            curStock = curStock + m - o;
-            row.push(m, o, curStock);
+            mSum += m; oSum += o; cur = cur + m - o;
+            dayParts += `,${m},${o},${cur}`;
           }
-          csv += row.join(',') + '\r\n';
+          csv += `"${p.id}","${p.name}",${p.initStock},${mSum},${oSum}${dayParts}\n`;
         });
 
         const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `製造計画_${APP_STATE.year}年${APP_STATE.month}月.csv`;
+        a.download = `製造出庫管理表_${APP_STATE.year}年${APP_STATE.month}月.csv`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast('CSVファイルをダウンロードしました', 'success');
-      };
+      });
     }
 
-    // トースト通知関数
-    function showToast(msg, type = 'info') {
-      const toast = document.getElementById('toast');
-      const icon = document.getElementById('toastIcon');
-      const msgEl = document.getElementById('toastMsg');
+    // アプリケーション起動時の初期化実行
+    window.onload = function() {
+      initMatrix();
+      setupCsvModal();
+      setupEventListeners();
+      renderPeriodTabs();
+      loadDataFromGas();
+    };
+  </script>
+<!-- ▼▼▼ 1453行目以降をすべてこれに置き換え ▼▼▼ -->
+<style id="perfect-print-css">
+  @media print {
+    @page {
+      size: A4 landscape;
+      margin: 8mm 10mm;
+    }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      width: 100% !important;
+      height: 100% !important;
+      overflow: hidden !important; /* 2枚目の白紙を物理的に遮断 */
+    }
+    /* 元画面の全要素を完全に消去（高さをゼロにして2枚目の発生を防ぐ） */
+    body > *:not(#print-clean-wrapper) {
+      display: none !important;
+    }
+    /* A4横専用エリアのみ表示 */
+    #print-clean-wrapper {
+      display: block !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    #print-clean-wrapper table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      table-layout: fixed !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  }
+  @media screen {
+    #print-clean-wrapper {
+      display: none !important;
+    }
+  }
+</style>
 
-      msgEl.innerText = msg;
-      if (type === 'success') {
-        icon.innerHTML = '<span class="text-emerald-400 font-bold">✓</span>';
-        toast.className = 'fixed bottom-4 right-4 z-50 transition-all duration-300 bg-slate-900 border border-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 translate-y-0 opacity-100';
-      } else if (type === 'error') {
-        icon.innerHTML = '<span class="text-rose-400 font-bold">⚠</span>';
-        toast.className = 'fixed bottom-4 right-4 z-50 transition-all duration-300 bg-rose-950 border border-rose-600 text-rose-100 text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 translate-y-0 opacity-100';
-      } else {
-        icon.innerHTML = '<span class="text-blue-400 font-bold">ℹ</span>';
-        toast.className = 'fixed bottom-4 right-4 z-50 transition-all duration-300 bg-slate-900 border border-slate-700 text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 translate-y-0 opacity-100';
+<script>
+// 印刷ボタンのクリックをキャッチして実行
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('button');
+  if (btn && btn.textContent.includes('印刷')) {
+    e.preventDefault();
+    e.stopPropagation();
+    runSafeA4Print();
+  }
+}, true);
+
+function runSafeA4Print() {
+  try {
+    const table = document.querySelector('table');
+    if (!table) {
+      window.print();
+      return;
+    }
+
+    const trs = Array.from(table.querySelectorAll('tr'));
+    if (trs.length < 2) {
+      window.print();
+      return;
+    }
+
+    // 1. 日付ヘッダーの抽出（4列目以降の各日付）
+    const ths = Array.from(trs[0].querySelectorAll('th, td'));
+    const dayHeaders = [];
+    for (let i = 4; i < ths.length; i++) {
+      let t = ths[i].innerText.trim().replace(/\s+/g, ' ');
+      let bg = '#f8fafc; color:#1e293b;';
+      if (t.includes('土')) bg = '#e0f2fe; color:#0369a1;';
+      if (t.includes('日')) bg = '#ffe4e6; color:#be123c;';
+      dayHeaders.push({ text: t, bg: bg });
+    }
+
+    // 2. 各品目データ行と合計行の抽出
+    let rowsHtml = '';
+    let totalRowHtml = '';
+
+    trs.forEach(tr => {
+      const cells = Array.from(tr.querySelectorAll('td, th'));
+      if (cells.length < 5) return;
+
+      const col0Text = cells[0].innerText.trim();
+
+      // 日別合計行の処理
+      if (col0Text.includes('日別合計') || col0Text.includes('合計')) {
+        let dayTotalsHtml = '';
+        for (let d = 0; d < dayHeaders.length; d++) {
+          const c = cells[4 + d * 3];
+          const val = c ? c.innerText.trim() : '-';
+          dayTotalsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; font-weight:bold;">${val}</td>`;
+        }
+        totalRowHtml = `
+          <tr style="height:25px; background-color:#e2e8f0;">
+            <td style="border:1px solid #333; padding:2px 8px; text-align:center; font-size:11px; font-weight:bold;">日別合計 製造数 (cs)</td>
+            ${dayTotalsHtml}
+          </tr>
+        `;
+        return;
       }
 
-      setTimeout(() => {
-        toast.className = 'fixed bottom-4 right-4 z-50 transition-all duration-300 pointer-events-none bg-slate-900 text-white text-xs px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 translate-y-16 opacity-0';
-      }, 3500);
-    }
+      // 通常品目行の処理（品目名のみ）
+      if (col0Text && !col0Text.includes('品目名') && !col0Text.includes('製造') && !col0Text.includes('月初')) {
+        const boldEl = cells[0].querySelector('.font-bold');
+        const prodName = boldEl ? boldEl.innerText.trim() : cells[0].innerText.trim().split('\n')[0].trim();
 
-    window.addEventListener('DOMContentLoaded', () => {
-      // 初期マスタとマトリクスのセット
-      APP_STATE.products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
-      APP_STATE.matrix = {};
-      APP_STATE.products.forEach(p => {
-        APP_STATE.matrix[p.id] = {};
-        for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-          APP_STATE.matrix[p.id][d] = { make: 0, out: 0 };
+        let dayCellsHtml = '';
+        for (let d = 0; d < dayHeaders.length; d++) {
+          const c = cells[4 + d * 3];
+          let val = '-';
+          if (c) {
+            const input = c.querySelector('input');
+            val = input ? input.value.trim() : c.innerText.trim();
+            if (val === '') val = '-';
+          }
+          const isNum = (val !== '-' && val !== '0' && val !== '');
+          const fontStyle = isNum ? 'font-weight:bold; color:#000;' : 'color:#94a3b8;';
+          dayCellsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; ${fontStyle}">${val}</td>`;
         }
-      });
 
-      initEvents();
-      renderTable();
-
-      // GAS環境判定と自動初期読込
-      if (APP_STATE.isGasEnv) {
-        const envBadge = document.getElementById('envBadge');
-        if (envBadge) {
-          envBadge.className = 'bg-emerald-900/90 text-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded border border-emerald-600 flex items-center gap-1 shadow-sm';
-          envBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>GAS接続中';
-        }
-        loadDataFromGas(APP_STATE.year, APP_STATE.month);
+        rowsHtml += `
+          <tr style="height:22px;">
+            <td style="border:1px solid #333; padding:2px 8px; text-align:left; font-size:11px; font-weight:bold; white-space:nowrap; overflow:hidden;">${prodName}</td>
+            ${dayCellsHtml}
+          </tr>
+        `;
       }
     });
-  </script>
+
+    // 3. タイトル情報
+    const now = new Date();
+    const printDateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    
+    let activeWeekText = '週間製造予定表';
+    const activeBtn = Array.from(document.querySelectorAll('button')).find(b => b.classList.contains('bg-blue-600') || b.classList.contains('bg-slate-800'));
+    if (activeBtn && activeBtn.textContent.includes('第')) {
+      activeWeekText = `週間製造予定表 【${activeBtn.textContent.trim()}】`;
+    }
+
+    // 4. 日付ヘッダー
+    let theadDaysHtml = '';
+    const dayWidth = (70 / (dayHeaders.length || 7)).toFixed(1);
+    dayHeaders.forEach(dh => {
+      theadDaysHtml += `<th style="border:1px solid #333; padding:3px 2px; text-align:center; font-size:11px; width:${dayWidth}%; background-color:${dh.bg}">${dh.text}</th>`;
+    });
+
+    // 5. 印刷専用コンテナの構築
+    let pWrap = document.getElementById('print-clean-wrapper');
+    if (!pWrap) {
+      pWrap = document.createElement('div');
+      pWrap.id = 'print-clean-wrapper';
+      document.body.appendChild(pWrap);
+    }
+
+    pWrap.innerHTML = `
+      <div style="margin-bottom:6px; border-bottom:2px solid #222; padding-bottom:3px;">
+        <h1 style="font-size:17px; font-weight:bold; color:#0f172a; margin:0;">${activeWeekText}</h1>
+        <p style="font-size:10px; color:#64748b; margin:2px 0 0 0;">印刷日時: ${printDateStr} ｜ 単位: ケース (cs)</p>
+      </div>
+      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+        <thead>
+          <tr style="height:25px; background-color:#f1f5f9;">
+            <th style="border:1px solid #333; padding:3px 8px; text-align:left; font-size:11px; width:30%;">品目名</th>
+            ${theadDaysHtml}
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+        <tfoot>
+          ${totalRowHtml}
+        </tfoot>
+      </table>
+    `;
+
+    setTimeout(() => {
+      window.print();
+    }, 50);
+
+  } catch (err) {
+    console.error('Print Error:', err);
+    window.print();
+  }
+}
+</script>
 </body>
 </html>
