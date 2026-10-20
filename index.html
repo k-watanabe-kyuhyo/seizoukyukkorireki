@@ -44,7 +44,7 @@
       background: #64748b;
     }
 
-    /* テーブルヘッダー＆固定列の sticky スタイル（隙間をゼロにして密着固定） */
+    /* テーブルヘッダー＆固定列の sticky スタイル（隙間ゼロ密着固定） */
     .th-date-header {
       position: sticky;
       top: 0;
@@ -68,7 +68,7 @@
     .sticky-col-3 { position: sticky; left: 205px; z-index: 20; }
     .sticky-col-4 { position: sticky; left: 270px; z-index: 20; }
 
-    /* 行ホバー時のハイライト強化（左端の品目名・固定列まで漏れなく濃いめのブルーでハイライト） */
+    /* 行ホバー時のハイライト強化（左端の品目名・固定列まで漏れなく濃いめブルーでハイライト） */
     #tableBody tr:hover td {
       background-color: #dbeafe !important;
     }
@@ -90,29 +90,49 @@
       border-bottom: 1px solid #cbd5e1;
     }
 
-    /* 印刷時のスタイル定義（A4横・週次製造予定表） */
+    /* ========================================================= */
+    /* 印刷スタイル定義（A4横・ジャスト1ページ・白紙2枚目完全防止） */
+    /* ========================================================= */
     @media print {
       @page {
-        size: landscape;
-        margin: 8mm;
+        size: A4 landscape;
+        margin: 8mm 10mm;
       }
-      header, #kpiBar, #periodTabs, button, #alertBanner, #inputAssistTooltip, #toast, #csvModal {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important; /* 2枚目の白紙を物理的に遮断 */
+      }
+      /* 元画面の通常UIをすべて非表示 */
+      body > *:not(#print-clean-wrapper) {
         display: none !important;
       }
-      body {
-        background: #ffffff !important;
-        color: #000000 !important;
-      }
-      main {
-        padding: 0 !important;
-        overflow: visible !important;
-      }
-      .print-header {
+      /* A4横専用エリアのみ表示 */
+      #print-clean-wrapper {
         display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      #print-clean-wrapper table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
     }
-    .print-header {
-      display: none;
+    @media screen {
+      #print-clean-wrapper {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -147,11 +167,19 @@
     </div>
 
     <!-- アクションボタン群 -->
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center space-x-2 flex-wrap">
       <button id="btnSaveToSheet" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         シートへ保存
       </button>
+
+      <!-- 実在庫CSV取込ボタン（在庫報告書から月初確定） -->
+      <button id="btnOpenStockCsvModal" class="bg-cyan-700 hover:bg-cyan-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95" title="在庫報告書CSVから月初実在庫を確定">
+        <span>📦</span>
+        実在庫CSV取込
+      </button>
+
+      <!-- 出庫CSV取込ボタン -->
       <button id="btnOpenCsvModal" class="bg-teal-700 hover:bg-teal-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         出庫CSV取込
@@ -180,13 +208,13 @@
           <span id="pinIcon">📌</span> <span id="pinText">上部に固定</span>
         </button>
         <button id="btnToggleKpi" class="text-[11px] text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition flex items-center gap-1">
-          <span id="collapseIcon">▼</span> <span id="collapseText">カードを閉じる</span>
+          <span id="collapseIcon">▲</span> <span id="collapseText">カードを展開</span>
         </button>
       </div>
     </div>
 
-    <!-- KPI大カード群 -->
-    <div id="kpiCardsArea" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+    <!-- KPI大カード群（初期格納状態） -->
+    <div id="kpiCardsArea" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
       <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
         <div>
           <div class="text-[10px] text-slate-500 font-bold uppercase">月間計画製造数</div>
@@ -220,14 +248,12 @@
 
   <!-- 3. コントロールツールバー -->
   <div class="px-4 py-2 bg-white/90 border-b border-slate-300 flex flex-wrap items-center justify-between gap-2 text-xs">
-    <!-- 期間切り替えタブ（動的生成コンテナ） -->
-    <div class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0" id="periodTabs">
-      <!-- JSで月曜〜日曜サイクルに合わせて動的に生成 -->
-    </div>
+    <!-- 期間切り替えタブ（動的生成：月曜〜日曜サイクル） -->
+    <div class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0" id="periodTabs"></div>
 
     <!-- 補助ツールボタン -->
     <div class="flex items-center space-x-2">
-      <button id="btnPrintWeekly" class="px-2.5 py-1 rounded font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 transition flex items-center gap-1 active:scale-95" title="表示中の週の製造予定を印刷">
+      <button id="btnPrintWeekly" class="px-2.5 py-1 rounded font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 transition flex items-center gap-1 active:scale-95" title="表示中の週の製造予定をA4横1枚で印刷">
         <span>🖨</span> 印刷
       </button>
       <button id="btnAutoAllocate" class="px-2.5 py-1 rounded font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition flex items-center gap-1 active:scale-95">
@@ -239,19 +265,6 @@
       <button id="btnReload" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
         <span>🔄</span> 再読込
       </button>
-    </div>
-  </div>
-
-  <!-- 印刷専用ヘッダー（通常画面では非表示、印刷時のみ出現） -->
-  <div class="print-header px-4 py-2 mb-1 border-b-2 border-slate-800">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 id="printTitle" class="text-base font-black text-slate-900 tracking-wide">週間製造予定表</h2>
-        <div class="text-[11px] text-slate-500 font-semibold" id="printDate"></div>
-      </div>
-      <div class="text-[11px] border border-slate-400 px-3 py-1 text-center font-bold">
-        承認印：_________
-      </div>
     </div>
   </div>
 
@@ -274,7 +287,8 @@
       </span>
     </div>
     <div class="flex items-center gap-2">
-      <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1">
+      <!-- 在庫ステータス表示バッジ（実在庫確定 or 仮在庫引継） -->
+      <span id="stockStatusBadge" class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1">
         🔗 前月末残数を月初在庫へ自動引継中
       </span>
       <span class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold border border-rose-300">
@@ -312,7 +326,56 @@
     </div>
   </main>
 
-  <!-- 5. 出庫CSV取込モーダル -->
+  <!-- 5. 実在庫CSV取込モーダル -->
+  <div id="stockCsvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
+      <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <span>📦</span>
+          実在庫CSV（在庫報告書）の取込
+        </h3>
+        <button id="btnCloseStockCsvModal" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
+      </div>
+      
+      <div class="p-4 space-y-3 text-xs">
+        <p class="text-slate-600 leading-relaxed">
+          基幹システム等から出力した「<span class="font-bold text-cyan-800">在庫報告書(日付指定).csv</span>」を指定してください。<br>
+          <span class="text-cyan-700 font-bold">※全倉庫（東側・西側・各工場等）の「ケース」数を品目ごとに自動合算し、現在表示中の月（<span id="stockModalTargetMonth" class="underline font-black"></span>）の月初実在庫として確定上書きします。</span>
+        </p>
+
+        <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-2.5 text-[11px] text-cyan-900">
+          <div class="font-bold mb-0.5 text-cyan-800">月初確定ルール：</div>
+          <div>当月はCSVの実在庫数でピタッと固定され、翌月以降は前月末残数が「仮在庫」として自動的にスライドします。</div>
+          <div class="text-[10px] text-cyan-700 mt-1">※全角文字・Shift-JIS / UTF-8 を自動判別して合算します。</div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">在庫報告書CSVファイルを選択</label>
+          <input type="file" id="stockCsvFileInput" accept=".csv,text/csv" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-cyan-700 file:text-white hover:file:bg-cyan-800 cursor-pointer border border-slate-300 rounded p-1">
+        </div>
+
+        <!-- リアルタイム解析プレビューエリア -->
+        <div id="stockCsvPreviewArea" class="hidden border border-slate-200 rounded-lg p-2.5 bg-slate-50 max-h-48 overflow-y-auto space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1">
+            <span>解析プレビュー (全倉庫合算)</span>
+            <span id="stockCsvMatchCount" class="text-cyan-700 font-black">0品目 照合成功</span>
+          </div>
+          <div id="stockCsvPreviewList" class="space-y-1 text-[11px]">
+            <!-- 照合結果が並ぶ -->
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-end space-x-2 border-t border-slate-200">
+        <button id="btnCancelStockCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
+        <button id="btnApplyStockCsvData" class="px-3.5 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>
+          この内容で月初実在庫を確定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 出庫CSV取込モーダル -->
   <div id="csvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
@@ -325,14 +388,14 @@
       
       <div class="p-4 space-y-3 text-xs">
         <p class="text-slate-600 leading-relaxed">
-          基幹システム等から出力した「出庫実績CSV（またはExcelをCSV形式で保存したファイル）」を指定してください。<br>
+          基幹システム等から出力した「出庫実績CSV」を指定してください。<br>
           <span class="text-teal-700 font-bold">※取り込みを実行すると、既存の古い出庫数を自動でゼロクリアしてから最新データで上書きします（再取り込み時も重複しません）。</span>
         </p>
 
         <div class="bg-teal-50 border border-teal-200 rounded-lg p-2.5 text-[11px] text-teal-900">
           <div class="font-bold mb-0.5 text-teal-800">自動反映ルール：</div>
           <div>CSV内の「ケース数1」「ケース数2」…の数値を、そのまま該当日の出庫数（橙セル）へ反映します。</div>
-          <div class="text-[10px] text-teal-600 mt-1">※全角文字・全角数字（１，２，３）・Shift-JIS / UTF-8 を自動判別するため文字化けしません。</div>
+          <div class="text-[10px] text-teal-600 mt-1">※全角文字・全角数字・Shift-JIS / UTF-8 を自動判別します。</div>
         </div>
 
         <div>
@@ -389,10 +452,13 @@
       daysInMonth: 31,
       currentPeriod: 'all', // 'w1', 'w2', 'w3', 'w4', 'w5', 'all'
       isKpiPinned: false,
-      isKpiCollapsed: false,
+      isKpiCollapsed: true, // 初期状態で格納
       isGasConnected: false,
 
-      // 商品マスタ定義（H列入数・安全在庫・月初基準在庫）
+      // 月別の実在庫CSV確定データ: { "2026-10": { 1: 3547, 2: 46, ... } }
+      realStockMapByMonth: {},
+
+      // 商品マスタ定義（H列入数・安全在庫・基準在庫）
       products: [
         { id: 1,  name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 7200, masterInitStock: 6208, initStock: 6208, safeStock: 500, memo: '主力商品' },
         { id: 2,  name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 60,   masterInitStock: 50,   initStock: 50,   safeStock: 20,  memo: '' },
@@ -412,8 +478,48 @@
 
       // 日別データ matrix[productId][day] = { make: 0, out: 0 }
       matrix: {},
-      parsedCsvResult: null
+      parsedCsvResult: null,
+      parsedStockCsvResult: null
     };
+
+    // 年月キー（例: "2026-10"）
+    function getYmKey(y, m) {
+      return `${y}-${String(m).padStart(2, '0')}`;
+    }
+
+    // 月初在庫の再計算（CSV確定実在庫があれば優先、なければ前月末残数から仮在庫として算出）
+    function updateInitialStocksForCurrentMonth() {
+      const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
+      const isConfirmed = !!(APP_STATE.realStockMapByMonth[ymKey]);
+
+      if (isConfirmed) {
+        // 当月は実在庫CSVで確定
+        const confMap = APP_STATE.realStockMapByMonth[ymKey];
+        APP_STATE.products.forEach(p => {
+          if (confMap[p.id] !== undefined) {
+            p.initStock = confMap[p.id];
+          }
+        });
+      } else {
+        // 未確定（翌月など）：直前の月の月末残数または基準在庫からの引き継ぎ
+        APP_STATE.products.forEach(p => {
+          let baseStock = p.masterInitStock;
+          p.initStock = baseStock;
+        });
+      }
+
+      // バッジ表示の更新
+      const statusBadge = document.getElementById('stockStatusBadge');
+      if (statusBadge) {
+        if (isConfirmed) {
+          statusBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1';
+          statusBadge.innerHTML = `✅ ${APP_STATE.month}月度は在庫報告書CSVから確定実在庫を反映中`;
+        } else {
+          statusBadge.className = 'text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold border border-amber-300 flex items-center gap-1';
+          statusBadge.innerHTML = `⚠️ 前月末残数を月初仮在庫へ自動引継中（実在庫CSV取込可）`;
+        }
+      }
+    }
 
     // 日付とマトリクスの初期化
     function initMatrix() {
@@ -425,13 +531,14 @@
           APP_STATE.matrix[p.id][d] = { make: 0, out: 0 };
         }
       });
+      updateInitialStocksForCurrentMonth();
     }
 
     // カレンダーの月曜〜日曜サイクル（週配列）を算出
     function getMonthWeeks(year, month) {
       const daysInMonth = new Date(year, month, 0).getDate();
       const firstDate = new Date(year, month - 1, 1);
-      const dow = firstDate.getDay(); // 0 is Sun, 1 is Mon...
+      const dow = firstDate.getDay(); // 0: 日, 1: 月
       const mondayOffset = (dow === 0) ? -6 : (1 - dow);
       
       const weeks = [];
@@ -489,9 +596,7 @@
 
       const weeks = getMonthWeeks(year, month);
       const found = weeks.find(w => w.id === period);
-      if (found) {
-        return found.days;
-      }
+      if (found) return found.days;
 
       if (weeks.length > 0) {
         APP_STATE.currentPeriod = 'all';
@@ -558,23 +663,45 @@
       return isNaN(n) ? 0 : n;
     }
 
+    // 入力アシストポップアップおよび強調表示を非表示にするヘルパー関数
+    function hideInputAssistTooltip() {
+      const tooltip = document.getElementById('inputAssistTooltip');
+      if (tooltip) {
+        tooltip.classList.remove('opacity-100');
+        tooltip.classList.add('opacity-0');
+      }
+      const activeBadge = document.getElementById('activeEditingBadge');
+      if (activeBadge) {
+        activeBadge.classList.add('hidden');
+        activeBadge.classList.remove('inline-flex');
+      }
+      document.querySelectorAll('#tableBody tr td.sticky-col-1').forEach(td => {
+        td.classList.remove('ring-2', 'ring-blue-600', 'ring-inset', 'font-black');
+      });
+    }
+
     // テーブルの再描画
     function renderTable() {
+      hideInputAssistTooltip();
       const days = getDisplayDays();
       const thead = document.getElementById('tableHead');
       const tbody = document.getElementById('tableBody');
       const tfoot = document.getElementById('tableFoot');
 
-      const y = APP_STATE.year;
-      const m = APP_STATE.month;
+      const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
+      const isConfirmed = !!(APP_STATE.realStockMapByMonth[ymKey]);
+      const stockBadgeHtml = isConfirmed
+        ? `<div class="text-[9px] text-emerald-400 font-bold leading-tight">実在庫(確定)</div>`
+        : `<div class="text-[9px] text-amber-400 font-bold leading-tight">仮在庫(引継)</div>`;
+
       const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'];
 
-      // 1. テーブルヘッダーの生成
+      // 1. テーブルヘッダーの生成（隙間ゼロ密着固定）
       let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
         <th rowspan="2" class="sticky-corner-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[140px] min-w-[140px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">品目名</th>
         <th rowspan="2" class="sticky-corner-2 bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-slate-200 w-[65px] min-w-[65px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">
           <div>月初在庫</div>
-          <div class="text-[9px] text-emerald-400 font-normal leading-tight">(自動引継)</div>
+          ${stockBadgeHtml}
         </th>
         <th rowspan="2" class="sticky-corner-3 bg-slate-800 text-right px-2 py-1 text-xs font-bold text-blue-300 w-[65px] min-w-[65px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">累計製造</th>
         <th rowspan="2" class="sticky-corner-4 bg-slate-800 text-right px-2 py-1 text-xs font-bold text-amber-300 w-[65px] min-w-[65px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">累計出庫</th>`;
@@ -644,7 +771,7 @@
         const rowBgClass = isEven ? 'bg-slate-50/90' : 'bg-white';
         const fixedColBg = isEven ? 'bg-slate-100' : 'bg-slate-50';
 
-        // 全日付の在庫推移マップを事前計算
+        // 日別在庫推移マップの事前計算
         const dailyStockMap = {};
         for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
           const makeVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
@@ -723,16 +850,16 @@
 
         bHtml += `<tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-blue-50/60 transition" id="row-p-${p.id}">
           <td class="sticky-col-1 ${fixedColBg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
-            <div class="truncate max-w-[130px]" title="${p.name}">${p.name}</div>
+            <div class="truncate max-w-[130px] font-bold" title="${p.name}">${p.name}</div>
             <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''} <span class="text-slate-600 font-medium">入:${p.packQty || 1}</span></div>
           </td>
           <td class="sticky-col-2 ${fixedColBg} px-2 py-1.5 text-right font-black text-slate-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
             ${(p.initStock || 0).toLocaleString()}
           </td>
-          <td class="sticky-col-3 ${fixedColBg} px-2 py-1.5 text-right font-black text-blue-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]" id="psum-make-${p.id}">
+          <td class="sticky-col-3 ${fixedColBg} px-2 py-1.5 text-right font-black text-blue-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
             ${pMakeSum.toLocaleString()}
           </td>
-          <td class="sticky-col-4 ${fixedColBg} px-2 py-1.5 text-right font-black text-amber-700 text-xs border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]" id="psum-out-${p.id}">
+          <td class="sticky-col-4 ${fixedColBg} px-2 py-1.5 text-right font-black text-amber-700 text-xs border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]">
             ${pOutSum.toLocaleString()}
           </td>
           ${dayCells}
@@ -806,7 +933,7 @@
       attachInputEvents();
     }
 
-    // セル入力時のイベント紐付け
+    // セル入力時のイベント紐付け（フローティング吹き出し）
     function attachInputEvents() {
       const tooltip = document.getElementById('inputAssistTooltip');
       const activeBadge = document.getElementById('activeEditingBadge');
@@ -876,17 +1003,7 @@
         });
 
         input.addEventListener('blur', function() {
-          if (tooltip) tooltip.classList.add('opacity-0');
-          const pId = parseInt(this.dataset.pid, 10);
-          const row = document.getElementById(`row-p-${pId}`);
-          if (row) {
-            const nameCell = row.querySelector('.sticky-col-1');
-            if (nameCell) nameCell.classList.remove('ring-2', 'ring-blue-600', 'ring-inset', 'font-black');
-          }
-          if (activeBadge) {
-            activeBadge.classList.add('hidden');
-            activeBadge.classList.remove('inline-flex');
-          }
+          hideInputAssistTooltip();
         });
 
         input.addEventListener('change', function() {
@@ -914,7 +1031,223 @@
       });
     }
 
-    // CSV内容の解析
+    // ==========================================
+    // 7. 実在庫CSV（在庫報告書）の解析＆取込処理
+    // ==========================================
+    const STOCK_CODE_MAP = {
+      112: 1, // おいしい氷3kg
+      116: 2, 162: 2, // おいしい氷アイスカップ
+      23: 3,  // 博多純氷カチ割り1kg
+      31: 4,  // おいしい氷1kg
+      33: 5, 163: 5, // ドンキホーテ極氷1.1kg
+      37: 6, 164: 6, // ヒロキュー千年氷1kg
+      136: 7, 161: 7, // CGC1kg
+      52: 8,  // おいしい氷2kgチャック
+      74: 9,  // おいしい氷1.1kg
+      159: 10, // ゆめイチ1kg (氷屋さんが作った氷1kg)
+      160: 11, // ゆめイチ2.1kg (氷屋さんが作った氷2.1kg)
+      169: 12, // スティック40mm
+      170: 13, // スティック60mm
+      171: 14  // スティック110mm
+    };
+
+    function parseStockCsvContent(text) {
+      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+      if (lines.length < 2) return null;
+
+      const rows = lines.map(line => {
+        const result = [];
+        let cur = '';
+        let inQuote = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') inQuote = !inQuote;
+          else if (ch === ',' && !inQuote) {
+            result.push(cur.trim());
+            cur = '';
+          } else {
+            cur += ch;
+          }
+        }
+        result.push(cur.trim());
+        return result;
+      });
+
+      const header = rows[0].map(h => String(h).normalize('NFKC').trim());
+      
+      let colCode = -1;
+      let colName = -1;
+      let colCase = -1;
+
+      header.forEach((col, idx) => {
+        if (/商品コード|ｺｰﾄﾞ|コード/i.test(col)) colCode = idx;
+        if (/商品名規格|商品名|品名|名称/i.test(col)) colName = idx;
+        if (/^ケース$/i.test(col) || /ケース数/i.test(col)) colCase = idx;
+      });
+
+      if (colCode === -1) colCode = 10;
+      if (colName === -1) colName = 11;
+      if (colCase === -1) colCase = 21;
+
+      // 品目別の合算マップ
+      const totalCasesByProduct = {};
+      APP_STATE.products.forEach(p => {
+        totalCasesByProduct[p.id] = 0;
+      });
+
+      let hitRowCount = 0;
+
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row || row.length < 5) continue;
+
+        const rowCode = cleanNum(row[colCode]);
+        const rowName = String(row[colName] || '').normalize('NFKC').trim();
+        const caseVal = cleanNum(row[colCase]);
+
+        let matchedP = null;
+        if (STOCK_CODE_MAP[rowCode]) {
+          matchedP = APP_STATE.products.find(p => p.id === STOCK_CODE_MAP[rowCode]);
+        }
+        if (!matchedP && rowName) {
+          matchedP = APP_STATE.products.find(p => {
+            const cleanPName = p.name.normalize('NFKC').replace(/\s+/g, '');
+            const cleanRName = rowName.replace(/\s+/g, '');
+            return cleanRName.includes(cleanPName) || cleanPName.includes(cleanRName);
+          });
+        }
+
+        if (matchedP && caseVal > 0) {
+          totalCasesByProduct[matchedP.id] += caseVal;
+          hitRowCount++;
+        }
+      }
+
+      const resultList = [];
+      APP_STATE.products.forEach(p => {
+        resultList.push({
+          productId: p.id,
+          productName: p.name,
+          totalCases: totalCasesByProduct[p.id] || 0
+        });
+      });
+
+      return { list: resultList, hitCount: hitRowCount };
+    }
+
+    function setupStockCsvModal() {
+      const modal = document.getElementById('stockCsvModal');
+      const fileInput = document.getElementById('stockCsvFileInput');
+      const btnApply = document.getElementById('btnApplyStockCsvData');
+      const previewArea = document.getElementById('stockCsvPreviewArea');
+      const previewList = document.getElementById('stockCsvPreviewList');
+      const matchCount = document.getElementById('stockCsvMatchCount');
+      const modalMonth = document.getElementById('stockModalTargetMonth');
+
+      document.getElementById('btnOpenStockCsvModal').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        fileInput.value = '';
+        btnApply.disabled = true;
+        previewArea.classList.add('hidden');
+        APP_STATE.parsedStockCsvResult = null;
+        modalMonth.textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+      });
+
+      const closeModal = () => modal.classList.add('hidden');
+      document.getElementById('btnCloseStockCsvModal').addEventListener('click', closeModal);
+      document.getElementById('btnCancelStockCsvModal').addEventListener('click', closeModal);
+
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const buffer = evt.target.result;
+          let text = '';
+          try {
+            const decoder = new TextDecoder('shift-jis');
+            text = decoder.decode(buffer);
+            if (text.includes('')) throw new Error('Shift-JIS miss');
+          } catch (err) {
+            const decoder = new TextDecoder('utf-8');
+            text = decoder.decode(buffer);
+          }
+
+          const parsed = parseStockCsvContent(text);
+          if (parsed && parsed.hitCount > 0) {
+            APP_STATE.parsedStockCsvResult = parsed.list;
+            btnApply.disabled = false;
+            previewArea.classList.remove('hidden');
+            matchCount.textContent = `${parsed.hitCount}件の明細を集計成功`;
+
+            previewList.innerHTML = parsed.list.map(item => `
+              <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                <span class="font-bold text-slate-800">${item.productName}</span>
+                <span class="font-extrabold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
+                  合算実在庫: ${item.totalCases.toLocaleString()} c/s
+                </span>
+              </div>
+            `).join('');
+          } else {
+            btnApply.disabled = true;
+            previewArea.classList.remove('hidden');
+            matchCount.textContent = '照合失敗';
+            previewList.innerHTML = `<div class="text-rose-600 font-bold p-2">在庫報告書の品目またはケース列が認識できませんでした。</div>`;
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnApply.addEventListener('click', function() {
+        if (!APP_STATE.parsedStockCsvResult) return;
+
+        const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
+        if (!APP_STATE.realStockMapByMonth[ymKey]) {
+          APP_STATE.realStockMapByMonth[ymKey] = {};
+        }
+
+        const stockRecords = [];
+        APP_STATE.parsedStockCsvResult.forEach(item => {
+          APP_STATE.realStockMapByMonth[ymKey][item.productId] = item.totalCases;
+          const p = APP_STATE.products.find(prod => prod.id === item.productId);
+          if (p) {
+            p.initStock = item.totalCases;
+          }
+          stockRecords.push({
+            productId: item.productId,
+            productName: item.productName,
+            stock: item.totalCases
+          });
+        });
+
+        renderTable();
+        closeModal();
+
+        // スプレッドシート（月別月初実在庫シート）へ即座に自動保存
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('実在庫データをスプレッドシートへ保存中...', '⏳');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              if (res && res.success) {
+                showToast(`${APP_STATE.year}年${APP_STATE.month}月度の月初実在庫(${res.count}品目)をシートへ保存しました！`);
+              } else {
+                showToast('保存に失敗しました: ' + (res ? res.message : 'エラー'), '⚠');
+              }
+            })
+            .withFailureHandler(function(err) {
+              showToast('スプレッドシート通信エラー: ' + err, '⚠');
+            })
+            .apiSaveMonthlyStock(stockRecords, APP_STATE.year, APP_STATE.month);
+        } else {
+          showToast(`${APP_STATE.year}年${APP_STATE.month}月度の月初実在庫を確定反映しました（プレビュー）`);
+        }
+      });
+    }
+
+    // ==========================================
+    // 8. 出庫CSV（ケース数直接反映・自動上書き）
+    // ==========================================
     function parseCsvContent(text) {
       const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
       if (lines.length < 2) return null;
@@ -1015,7 +1348,6 @@
       return matchedData;
     }
 
-    // CSVモーダルの開閉とファイル読み込み設定
     function setupCsvModal() {
       const modal = document.getElementById('csvModal');
       const fileInput = document.getElementById('csvFileInput');
@@ -1084,6 +1416,7 @@
       btnApply.addEventListener('click', function() {
         if (!APP_STATE.parsedCsvResult) return;
 
+        // 最新データで上書きするため、当月の出庫を自動クリア
         APP_STATE.products.forEach(p => {
           for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
             if (APP_STATE.matrix[p.id] && APP_STATE.matrix[p.id][d]) {
@@ -1102,11 +1435,40 @@
           });
         });
 
+        // スプレッドシート保存用の出庫レコードを作成
+        const outRecords = [];
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
+            if (oVal > 0) {
+              outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
+            }
+          }
+        });
+
         APP_STATE.currentPeriod = 'all';
         renderPeriodTabs();
         renderTable();
         closeModal();
-        showToast(`${APP_STATE.parsedCsvResult.length}品目の出庫データを最新値で上書き反映しました`);
+
+        // スプレッドシート（出庫実績トランザクション）へ即座に自動保存
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('出庫データをスプレッドシートへ保存中...', '⏳');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              if (res && res.success) {
+                showToast(`出庫データ(${res.count}件)をスプレッドシートへ自動保存しました！`);
+              } else {
+                showToast('保存に失敗しました: ' + (res ? res.message : 'エラー'), '⚠');
+              }
+            })
+            .withFailureHandler(function(err) {
+              showToast('スプレッドシート通信エラー: ' + err, '⚠');
+            })
+            .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
+        } else {
+          showToast(`${APP_STATE.parsedCsvResult.length}品目の出庫データを画面に反映しました（プレビュー）`);
+        }
       });
 
       document.getElementById('btnLoadSampleCsv').addEventListener('click', function() {
@@ -1130,103 +1492,158 @@
         });
 
         sampleRecords.forEach(s => {
-        Object.keys(s.dailyCases).forEach(d => {
-          if (APP_STATE.matrix[s.productId]?.[d]) {
-            APP_STATE.matrix[s.productId][d].out = s.dailyCases[d];
+          Object.keys(s.dailyCases).forEach(d => {
+            if (APP_STATE.matrix[s.productId]?.[d]) {
+              APP_STATE.matrix[s.productId][d].out = s.dailyCases[d];
+            }
+          });
+        });
+
+        APP_STATE.currentPeriod = 'all';
+        renderPeriodTabs();
+        renderTable();
+        closeModal();
+        showToast('10月度のサンプル出庫データを反映しました');
+      });
+    }
+
+    // ==========================================
+    // 9. A4横1枚 週間製造予定表 印刷処理
+    // ==========================================
+    function runSafeA4Print() {
+      try {
+        const table = document.getElementById('mainTable');
+        if (!table) {
+          window.print();
+          return;
+        }
+
+        const trs = Array.from(table.querySelectorAll('tr'));
+        if (trs.length < 2) {
+          window.print();
+          return;
+        }
+
+        // 日付ヘッダーの抽出
+        const ths = Array.from(trs[0].querySelectorAll('th, td'));
+        const dayHeaders = [];
+        for (let i = 4; i < ths.length; i++) {
+          let t = ths[i].innerText.trim().replace(/\s+/g, ' ');
+          let bg = '#f8fafc; color:#1e293b;';
+          if (t.includes('土')) bg = '#e0f2fe; color:#0369a1;';
+          if (t.includes('日')) bg = '#ffe4e6; color:#be123c;';
+          dayHeaders.push({ text: t, bg: bg });
+        }
+
+        let rowsHtml = '';
+        let totalRowHtml = '';
+
+        trs.forEach(tr => {
+          const cells = Array.from(tr.querySelectorAll('td, th'));
+          if (cells.length < 5) return;
+
+          const col0Text = cells[0].innerText.trim();
+
+          // 合計行
+          if (col0Text.includes('日別合計') || col0Text.includes('合計')) {
+            let dayTotalsHtml = '';
+            for (let d = 0; d < dayHeaders.length; d++) {
+              const c = cells[4 + d * 3];
+              const val = c ? c.innerText.trim() : '-';
+              dayTotalsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; font-weight:bold;">${val}</td>`;
+            }
+            totalRowHtml = `
+              <tr style="height:25px; background-color:#e2e8f0;">
+                <td style="border:1px solid #333; padding:2px 8px; text-align:center; font-size:11px; font-weight:bold;">日別合計 製造数 (cs)</td>
+                ${dayTotalsHtml}
+              </tr>
+            `;
+            return;
+          }
+
+          // 通常品目行（品目名のみ・規格・週製造計は削除）
+          if (col0Text && !col0Text.includes('品目名') && !col0Text.includes('製造') && !col0Text.includes('月初')) {
+            const boldEl = cells[0].querySelector('.font-bold');
+            const prodName = boldEl ? boldEl.innerText.trim() : cells[0].innerText.trim().split('\n')[0].trim();
+
+            let dayCellsHtml = '';
+            for (let d = 0; d < dayHeaders.length; d++) {
+              const c = cells[4 + d * 3];
+              let val = '-';
+              if (c) {
+                const input = c.querySelector('input');
+                val = input ? input.value.trim() : c.innerText.trim();
+                if (val === '') val = '-';
+              }
+              const isNum = (val !== '-' && val !== '0' && val !== '');
+              const fontStyle = isNum ? 'font-weight:bold; color:#000;' : 'color:#94a3b8;';
+              dayCellsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; ${fontStyle}">${val}</td>`;
+            }
+
+            rowsHtml += `
+              <tr style="height:22px;">
+                <td style="border:1px solid #333; padding:2px 8px; text-align:left; font-size:11px; font-weight:bold; white-space:nowrap; overflow:hidden;">${prodName}</td>
+                ${dayCellsHtml}
+              </tr>
+            `;
           }
         });
-      });
 
-      APP_STATE.currentPeriod = 'all';
-      renderPeriodTabs();
-      renderTable();
-      closeModal();
-      showToast('10月度のサンプル出庫データを反映しました');
-    });
-  }
-
-  // 印刷専用テーブルの生成（品目名＋規格＋週製造計＋月〜日製造数のみ、A4横1枚用）
-  function buildPrintTable(days) {
-    const table = document.getElementById('printTableDynamic');
-    if (!table) return;
-
-    const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'];
-    
-    // 1. ヘッダー生成（月〜日の7日間 ＋ 週製造計）
-    let headHtml = `<thead>
-      <tr class="bg-slate-200 text-slate-900 border-b border-slate-800">
-        <th style="width: 24%;" class="border border-slate-800 px-2 py-1 text-left font-black">品目名</th>
-        <th style="width: 10%;" class="border border-slate-800 px-1 py-1 text-center font-bold">規格</th>
-        <th style="width: 10%;" class="border border-slate-800 px-1 py-1 text-right bg-blue-100/80 font-black">週製造計</th>`;
-
-    days.forEach(dayInfo => {
-      const dow = dayOfWeekStr[dayInfo.dow];
-      let bg = 'bg-slate-100';
-      if (dayInfo.dow === 0) bg = 'bg-rose-100/80 text-rose-950 font-black';
-      else if (dayInfo.dow === 6) bg = 'bg-blue-100/80 text-blue-950 font-black';
-
-      headHtml += `<th style="width: 8%;" class="border border-slate-800 px-1 py-1 text-center ${bg}">
-        <div class="leading-tight font-black">${dayInfo.month}/${dayInfo.day}</div>
-        <div class="text-[9px] font-bold">(${dow})</div>
-      </th>`;
-    });
-    headHtml += `</tr></thead>`;
-
-    // 2. ボディ生成（14品目の製造予定のみ）
-    let bodyHtml = `<tbody>`;
-    const dayMakeTotals = {};
-    days.forEach(d => { dayMakeTotals[d.day] = 0; });
-    let weeklyGrandTotal = 0;
-
-    APP_STATE.products.forEach((p, idx) => {
-      let pWeeklyMake = 0;
-      let dayCells = '';
-
-      days.forEach(dayInfo => {
-        let makeVal = 0;
-        if (dayInfo.isCurrentMonth) {
-          makeVal = APP_STATE.matrix[p.id]?.[dayInfo.day]?.make || 0;
-          dayMakeTotals[dayInfo.day] += makeVal;
+        const now = new Date();
+        const printDateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        
+        let activeWeekText = '週間製造予定表';
+        const activeBtn = Array.from(document.querySelectorAll('#periodTabs button')).find(b => b.classList.contains('bg-blue-600'));
+        if (activeBtn && activeBtn.textContent.includes('第')) {
+          activeWeekText = `週間製造予定表 【${activeBtn.textContent.trim()}】`;
         }
-        pWeeklyMake += makeVal;
 
-        const displayVal = makeVal > 0 ? makeVal.toLocaleString() : '-';
-        const cellStyle = makeVal > 0 ? 'font-black text-black text-center' : 'text-slate-300 text-center';
-        dayCells += `<td class="border border-slate-800 px-1 py-0.5 ${cellStyle}">${displayVal}</td>`;
-      });
+        let theadDaysHtml = '';
+        const dayWidth = (70 / (dayHeaders.length || 7)).toFixed(1);
+        dayHeaders.forEach(dh => {
+          theadDaysHtml += `<th style="border:1px solid #333; padding:3px 2px; text-align:center; font-size:11px; width:${dayWidth}%; background-color:${dh.bg}">${dh.text}</th>`;
+        });
 
-      weeklyGrandTotal += pWeeklyMake;
-      const weeklyBold = pWeeklyMake > 0 ? 'font-black text-blue-950 bg-blue-50/50 text-right' : 'text-slate-400 text-right';
-      const rowBg = idx % 2 === 1 ? 'bg-slate-50' : 'bg-white';
+        let pWrap = document.getElementById('print-clean-wrapper');
+        if (!pWrap) {
+          pWrap = document.createElement('div');
+          pWrap.id = 'print-clean-wrapper';
+          document.body.appendChild(pWrap);
+        }
 
-      bodyHtml += `<tr class="${rowBg}">
-        <td class="border border-slate-800 px-2 py-0.5 font-bold truncate text-xs text-left">${p.name}</td>
-        <td class="border border-slate-800 px-1 py-0.5 text-center text-[10px] text-slate-700">${p.spec || ''}</td>
-        <td class="border border-slate-800 px-1 py-0.5 ${weeklyBold}">${pWeeklyMake > 0 ? pWeeklyMake.toLocaleString() : '-'}</td>
-        ${dayCells}
-      </tr>`;
-    });
-    bodyHtml += `</tbody>`;
+        pWrap.innerHTML = `
+          <div style="margin-bottom:6px; border-bottom:2px solid #222; padding-bottom:3px;">
+            <h1 style="font-size:17px; font-weight:bold; color:#0f172a; margin:0;">${activeWeekText}</h1>
+            <p style="font-size:10px; color:#64748b; margin:2px 0 0 0;">印刷日時: ${printDateStr} ｜ 単位: ケース (cs)</p>
+          </div>
+          <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+            <thead>
+              <tr style="height:25px; background-color:#f1f5f9;">
+                <th style="border:1px solid #333; padding:3px 8px; text-align:left; font-size:11px; width:30%;">品目名</th>
+                ${theadDaysHtml}
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+            <tfoot>
+              ${totalRowHtml}
+            </tfoot>
+          </table>
+        `;
 
-    // 3. フッター生成（日別合計行）
-    let footHtml = `<tfoot>
-      <tr class="bg-slate-300 font-black border-t-2 border-slate-800">
-        <td colspan="2" class="border border-slate-800 px-2 py-1 text-center text-xs">日別合計 製造予定数</td>
-        <td class="border border-slate-800 px-1 py-1 text-right text-xs bg-blue-200 text-blue-950">${weeklyGrandTotal.toLocaleString()}</td>`;
+        setTimeout(() => {
+          window.print();
+        }, 50);
 
-    days.forEach(dayInfo => {
-      const total = dayMakeTotals[dayInfo.day] || 0;
-      footHtml += `<td class="border border-slate-800 px-1 py-1 text-center text-xs ${total > 0 ? 'text-black' : 'text-slate-400'}">
-        ${total > 0 ? total.toLocaleString() : '-'}
-      </td>`;
-    });
-    footHtml += `</tr></tfoot>`;
+      } catch (err) {
+        console.error('Print Error:', err);
+        window.print();
+      }
+    }
 
-    table.innerHTML = headHtml + bodyHtml + footHtml;
-  }
-
-  // スプレッドシート（GAS）からのデータ読み込み
-  function loadDataFromGas() {
+    // スプレッドシート（GAS）からのデータ読み込み
+    function loadDataFromGas() {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         document.getElementById('connectionBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GAS接続中`;
         document.getElementById('connectionBadge').className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1';
@@ -1235,16 +1652,28 @@
         google.script.run
           .withSuccessHandler(function(res) {
             if (res && res.success) {
+              const ymKey = getYmKey(res.year, res.month);
+              if (res.realStockMap && Object.keys(res.realStockMap).length > 0) {
+                APP_STATE.realStockMapByMonth[ymKey] = res.realStockMap;
+              }
               if (res.products) APP_STATE.products = res.products;
               if (res.matrix) APP_STATE.matrix = res.matrix;
               APP_STATE.daysInMonth = res.daysInMonth || new Date(APP_STATE.year, APP_STATE.month, 0).getDate();
+              updateInitialStocksForCurrentMonth();
               renderPeriodTabs();
               renderTable();
               showToast(`${APP_STATE.year}年${APP_STATE.month}月のデータをシートから取得しました`);
+            } else {
+              // サーバー側でエラーが返っても品目欄を消さず必ず初期マスタで描画
+              console.warn('GAS Fetch warning:', res ? res.message : 'Unknown response');
+              updateInitialStocksForCurrentMonth();
+              renderPeriodTabs();
+              renderTable();
             }
           })
           .withFailureHandler(function(err) {
             console.warn('GAS Fetch error:', err);
+            updateInitialStocksForCurrentMonth();
             renderPeriodTabs();
             renderTable();
           })
@@ -1253,12 +1682,13 @@
         document.getElementById('connectionBadge').innerHTML = `● プレビューモード`;
         document.getElementById('connectionBadge').className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300';
         APP_STATE.isGasConnected = false;
+        updateInitialStocksForCurrentMonth();
         renderPeriodTabs();
         renderTable();
       }
     }
 
-    // 初期イベントリスナーの登録
+    // イベントリスナーの登録
     function setupEventListeners() {
       document.getElementById('btnPrevMonth').addEventListener('click', () => {
         if (APP_STATE.month === 1) {
@@ -1318,67 +1748,67 @@
       });
 
       document.getElementById('btnReload').addEventListener('click', () => {
-      loadDataFromGas();
-    });
-
-    // 週間製造予定の印刷イベント（表示中の週の専用表を組み立てて印刷）
-    const btnPrint = document.getElementById('btnPrintWeekly');
-    if (btnPrint) {
-      btnPrint.addEventListener('click', () => {
-        const weeks = getMonthWeeks(APP_STATE.year, APP_STATE.month);
-        let periodLabel = '全日一覧';
-        if (APP_STATE.currentPeriod !== 'all') {
-          const found = weeks.find(w => w.id === APP_STATE.currentPeriod);
-          if (found) periodLabel = found.label;
-        } else {
-          periodLabel = '全日一覧';
-        }
-
-        const printTitle = document.getElementById('printTitleText');
-        if (printTitle) {
-          printTitle.textContent = `${APP_STATE.year}年${APP_STATE.month}月度 週間製造予定表 【${periodLabel}】`;
-        }
-        const now = new Date();
-        const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        const printDate = document.getElementById('printDateText');
-        if (printDate) {
-          printDate.textContent = `出力日時: ${dateStr}`;
-        }
-
-        // 表示中の週の7日間（または全日）の製造予定専用テーブルを構築
-        const days = getDisplayDays();
-        buildPrintTable(days);
-
-        // レンダリング完了後に印刷ダイアログを表示
-        setTimeout(() => {
-          window.print();
-        }, 50);
+        loadDataFromGas();
       });
-    }
 
-    document.getElementById('btnSaveToSheet').addEventListener('click', () => {
-        const records = [];
+      // セル以外の場所をタップ・クリックした瞬間にポップアップを確実に消す
+      document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('.make-input') && !e.target.closest('.out-input')) {
+          hideInputAssistTooltip();
+        }
+      });
+
+      // Escapeキー押下時も即座に消す
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          hideInputAssistTooltip();
+        }
+      });
+
+      // 印刷ボタン
+      const btnPrint = document.getElementById('btnPrintWeekly');
+      if (btnPrint) {
+        btnPrint.addEventListener('click', () => {
+          runSafeA4Print();
+        });
+      }
+
+      document.getElementById('btnSaveToSheet').addEventListener('click', () => {
+        const planRecords = [];
+        const outRecords = [];
+
         APP_STATE.products.forEach(p => {
           for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
             const mVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
+            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
             if (mVal > 0) {
-              records.push({ day: d, productId: p.id, productName: p.name, make: mVal });
+              planRecords.push({ day: d, productId: p.id, productName: p.name, make: mVal });
+            }
+            if (oVal > 0) {
+              outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
             }
           }
         });
 
         if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('スプレッドシートへ保存中...', '⏳');
           google.script.run
-            .withSuccessHandler(function(res) {
-              if (res && res.success) {
-                showToast(`計画データ(${res.count}件)を日別製造計画シートへ保存しました`);
-              } else {
-                showToast('保存に失敗しました: ' + (res ? res.message : 'エラー'), '⚠');
-              }
+            .withSuccessHandler(function(planRes) {
+              google.script.run
+                .withSuccessHandler(function(outRes) {
+                  showToast(`製造計画(${planRes.count}件)・出庫(${outRes.count}件)をシートへ保存しました！`);
+                })
+                .withFailureHandler(function(err) {
+                  showToast('出庫保存エラー: ' + err, '⚠');
+                })
+                .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
             })
-            .apiSaveDailyPlans(records, APP_STATE.year, APP_STATE.month);
+            .withFailureHandler(function(err) {
+              showToast('製造計画保存エラー: ' + err, '⚠');
+            })
+            .apiSaveDailyPlans(planRecords, APP_STATE.year, APP_STATE.month);
         } else {
-          showToast(`【プレビュー】${records.length}件の計画を保存しました（モック）`);
+          showToast(`【プレビュー】製造${planRecords.length}件・出庫${outRecords.length}件を保存しました（モック）`);
         }
       });
 
@@ -1441,206 +1871,15 @@
       });
     }
 
-    // アプリケーション起動時の初期化実行
+    // アプリケーション起動時の初期化
     window.onload = function() {
       initMatrix();
+      setupStockCsvModal();
       setupCsvModal();
       setupEventListeners();
       renderPeriodTabs();
       loadDataFromGas();
     };
   </script>
-<!-- ▼▼▼ 1453行目以降をすべてこれに置き換え ▼▼▼ -->
-<style id="perfect-print-css">
-  @media print {
-    @page {
-      size: A4 landscape;
-      margin: 8mm 10mm;
-    }
-    html, body {
-      margin: 0 !important;
-      padding: 0 !important;
-      background: #fff !important;
-      width: 100% !important;
-      height: 100% !important;
-      overflow: hidden !important; /* 2枚目の白紙を物理的に遮断 */
-    }
-    /* 元画面の全要素を完全に消去（高さをゼロにして2枚目の発生を防ぐ） */
-    body > *:not(#print-clean-wrapper) {
-      display: none !important;
-    }
-    /* A4横専用エリアのみ表示 */
-    #print-clean-wrapper {
-      display: block !important;
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      page-break-after: avoid !important;
-      break-after: avoid !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-    #print-clean-wrapper table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-      table-layout: fixed !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-  }
-  @media screen {
-    #print-clean-wrapper {
-      display: none !important;
-    }
-  }
-</style>
-
-<script>
-// 印刷ボタンのクリックをキャッチして実行
-document.addEventListener('click', function(e) {
-  const btn = e.target.closest('button');
-  if (btn && btn.textContent.includes('印刷')) {
-    e.preventDefault();
-    e.stopPropagation();
-    runSafeA4Print();
-  }
-}, true);
-
-function runSafeA4Print() {
-  try {
-    const table = document.querySelector('table');
-    if (!table) {
-      window.print();
-      return;
-    }
-
-    const trs = Array.from(table.querySelectorAll('tr'));
-    if (trs.length < 2) {
-      window.print();
-      return;
-    }
-
-    // 1. 日付ヘッダーの抽出（4列目以降の各日付）
-    const ths = Array.from(trs[0].querySelectorAll('th, td'));
-    const dayHeaders = [];
-    for (let i = 4; i < ths.length; i++) {
-      let t = ths[i].innerText.trim().replace(/\s+/g, ' ');
-      let bg = '#f8fafc; color:#1e293b;';
-      if (t.includes('土')) bg = '#e0f2fe; color:#0369a1;';
-      if (t.includes('日')) bg = '#ffe4e6; color:#be123c;';
-      dayHeaders.push({ text: t, bg: bg });
-    }
-
-    // 2. 各品目データ行と合計行の抽出
-    let rowsHtml = '';
-    let totalRowHtml = '';
-
-    trs.forEach(tr => {
-      const cells = Array.from(tr.querySelectorAll('td, th'));
-      if (cells.length < 5) return;
-
-      const col0Text = cells[0].innerText.trim();
-
-      // 日別合計行の処理
-      if (col0Text.includes('日別合計') || col0Text.includes('合計')) {
-        let dayTotalsHtml = '';
-        for (let d = 0; d < dayHeaders.length; d++) {
-          const c = cells[4 + d * 3];
-          const val = c ? c.innerText.trim() : '-';
-          dayTotalsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; font-weight:bold;">${val}</td>`;
-        }
-        totalRowHtml = `
-          <tr style="height:25px; background-color:#e2e8f0;">
-            <td style="border:1px solid #333; padding:2px 8px; text-align:center; font-size:11px; font-weight:bold;">日別合計 製造数 (cs)</td>
-            ${dayTotalsHtml}
-          </tr>
-        `;
-        return;
-      }
-
-      // 通常品目行の処理（品目名のみ）
-      if (col0Text && !col0Text.includes('品目名') && !col0Text.includes('製造') && !col0Text.includes('月初')) {
-        const boldEl = cells[0].querySelector('.font-bold');
-        const prodName = boldEl ? boldEl.innerText.trim() : cells[0].innerText.trim().split('\n')[0].trim();
-
-        let dayCellsHtml = '';
-        for (let d = 0; d < dayHeaders.length; d++) {
-          const c = cells[4 + d * 3];
-          let val = '-';
-          if (c) {
-            const input = c.querySelector('input');
-            val = input ? input.value.trim() : c.innerText.trim();
-            if (val === '') val = '-';
-          }
-          const isNum = (val !== '-' && val !== '0' && val !== '');
-          const fontStyle = isNum ? 'font-weight:bold; color:#000;' : 'color:#94a3b8;';
-          dayCellsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; ${fontStyle}">${val}</td>`;
-        }
-
-        rowsHtml += `
-          <tr style="height:22px;">
-            <td style="border:1px solid #333; padding:2px 8px; text-align:left; font-size:11px; font-weight:bold; white-space:nowrap; overflow:hidden;">${prodName}</td>
-            ${dayCellsHtml}
-          </tr>
-        `;
-      }
-    });
-
-    // 3. タイトル情報
-    const now = new Date();
-    const printDateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    
-    let activeWeekText = '週間製造予定表';
-    const activeBtn = Array.from(document.querySelectorAll('button')).find(b => b.classList.contains('bg-blue-600') || b.classList.contains('bg-slate-800'));
-    if (activeBtn && activeBtn.textContent.includes('第')) {
-      activeWeekText = `週間製造予定表 【${activeBtn.textContent.trim()}】`;
-    }
-
-    // 4. 日付ヘッダー
-    let theadDaysHtml = '';
-    const dayWidth = (70 / (dayHeaders.length || 7)).toFixed(1);
-    dayHeaders.forEach(dh => {
-      theadDaysHtml += `<th style="border:1px solid #333; padding:3px 2px; text-align:center; font-size:11px; width:${dayWidth}%; background-color:${dh.bg}">${dh.text}</th>`;
-    });
-
-    // 5. 印刷専用コンテナの構築
-    let pWrap = document.getElementById('print-clean-wrapper');
-    if (!pWrap) {
-      pWrap = document.createElement('div');
-      pWrap.id = 'print-clean-wrapper';
-      document.body.appendChild(pWrap);
-    }
-
-    pWrap.innerHTML = `
-      <div style="margin-bottom:6px; border-bottom:2px solid #222; padding-bottom:3px;">
-        <h1 style="font-size:17px; font-weight:bold; color:#0f172a; margin:0;">${activeWeekText}</h1>
-        <p style="font-size:10px; color:#64748b; margin:2px 0 0 0;">印刷日時: ${printDateStr} ｜ 単位: ケース (cs)</p>
-      </div>
-      <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
-        <thead>
-          <tr style="height:25px; background-color:#f1f5f9;">
-            <th style="border:1px solid #333; padding:3px 8px; text-align:left; font-size:11px; width:30%;">品目名</th>
-            ${theadDaysHtml}
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-        <tfoot>
-          ${totalRowHtml}
-        </tfoot>
-      </table>
-    `;
-
-    setTimeout(() => {
-      window.print();
-    }, 50);
-
-  } catch (err) {
-    console.error('Print Error:', err);
-    window.print();
-  }
-}
-</script>
 </body>
 </html>
