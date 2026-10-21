@@ -1,0 +1,348 @@
+<!-- ========================================================= -->
+<!-- annual_view.html: 年間計画シミュレーションビューモジュール  -->
+<!-- 貼り付け先: GASの「annual_view.html」                     -->
+<!-- ========================================================= -->
+
+<style>
+  .annual-sticky-col-1 { position: sticky; left: 0; z-index: 20; }
+  .annual-sticky-col-2 { position: sticky; left: 170px; z-index: 20; }
+  .annual-sticky-th-1 { position: sticky; top: 0; left: 0; z-index: 45; }
+  .annual-sticky-th-2 { position: sticky; top: 0; left: 170px; z-index: 45; }
+  .annual-th-top { position: sticky; top: 0; z-index: 32; height: 28px; }
+  .annual-th-sub { position: sticky; top: 28px; z-index: 31; height: 24px; }
+
+  #annualTableBody tr:hover td { background-color: #f0fdf4 !important; }
+  #annualTableBody tr:hover td.annual-sticky-col-1,
+  #annualTableBody tr:hover td.annual-sticky-col-2 { background-color: #dcfce7 !important; }
+</style>
+
+<!-- ガイダンスバー -->
+<div class="px-4 py-2 bg-indigo-50 border-b border-indigo-200 text-xs flex flex-wrap items-center justify-between gap-2">
+  <div class="flex items-center gap-3">
+    <span class="font-black text-indigo-900 flex items-center gap-1.5 text-sm">
+      <span>📅</span> <span id="annualYearBannerTitle">2026年度 年間販売・製造・在庫計画表</span>
+    </span>
+    <span class="text-slate-600 hidden md:inline">
+      営業の販売計画を取り込み、各月の「製造」予定を入力すると、右方向へ月末在庫が自動連動計算されます。
+    </span>
+  </div>
+  <div class="flex items-center gap-3 text-[11px]">
+    <span class="flex items-center gap-1 font-bold text-slate-700">
+      <span class="w-2.5 h-2.5 bg-blue-100 border border-blue-400 rounded-sm"></span> 販売 ＝ 営業計画
+    </span>
+    <span class="flex items-center gap-1 font-bold text-indigo-700">
+      <span class="w-2.5 h-2.5 bg-indigo-100 border border-indigo-500 rounded-sm"></span> 製造 ＝ 工場計画枠 (手入力)
+    </span>
+    <span class="flex items-center gap-1 font-bold text-amber-700">
+      <span class="w-2.5 h-2.5 bg-amber-100 border border-amber-400 rounded-sm"></span> 在庫 ＝ 連動計算
+    </span>
+  </div>
+</div>
+
+<!-- 年間データテーブル -->
+<main class="flex-1 px-4 py-2 overflow-hidden flex flex-col">
+  <div class="flex-1 bg-white rounded-lg shadow border border-slate-400 overflow-auto relative">
+    <table id="annualTable" class="w-max border-collapse text-left select-none text-xs">
+      <thead id="annualTableHead" class="text-slate-200 font-bold select-none"></thead>
+      <tbody id="annualTableBody" class="divide-y divide-slate-300 font-medium"></tbody>
+      <tfoot id="annualTableFoot" class="sticky bottom-0 z-30 font-bold bg-slate-200"></tfoot>
+    </table>
+  </div>
+</main>
+
+<!-- 年間販売計画CSVモーダル -->
+<div id="annualSalesCsvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
+    <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
+      <h3 class="font-bold text-sm flex items-center gap-2"><span>📊</span> 営業年間販売計画CSVの取込</h3>
+      <button id="btnCloseAnnualSalesCsvModal" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
+    </div>
+    <div class="p-4 space-y-3 text-xs">
+      <p class="text-slate-600 leading-relaxed">
+        営業から受領した「<span class="font-bold text-indigo-800">販売計画CSV（■20261-12月販売計画.csv）</span>」を指定してください。<br>
+        対象年（<span id="annualModalTargetYearText" class="font-black text-indigo-700">2026年</span>計画）の各月列を自動検知して取り込みます。
+      </p>
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">年間販売計画CSVファイルを選択</label>
+        <input type="file" id="annualSalesCsvFileInput" accept=".csv,text/csv" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-300 rounded p-1">
+      </div>
+      <div id="annualSalesCsvPreviewArea" class="hidden border border-slate-200 rounded-lg p-2.5 bg-slate-50 max-h-48 overflow-y-auto space-y-1.5">
+        <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1">
+          <span>解析プレビュー (1〜12月販売計)</span>
+          <span id="annualSalesCsvMatchCount" class="text-indigo-700 font-black">0品目 照合成功</span>
+        </div>
+        <div id="annualSalesCsvPreviewList" class="space-y-1 text-[11px]"></div>
+      </div>
+    </div>
+    <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-end space-x-2 border-t border-slate-200">
+      <button id="btnCancelAnnualSalesCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
+      <button id="btnApplyAnnualSalesCsvData" class="px-3.5 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>この内容で年間計画へ反映</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initAnnualMatrix(targetYear) {
+    if (!APP_STATE.annualMatrix[targetYear]) {
+      APP_STATE.annualMatrix[targetYear] = {};
+      APP_STATE.products.forEach(p => {
+        APP_STATE.annualMatrix[targetYear][p.id] = {};
+        for (let m = 1; m <= 12; m++) {
+          APP_STATE.annualMatrix[targetYear][p.id][m] = { sales: 0, make: 0 };
+        }
+      });
+    }
+  }
+
+  function renderAnnualTable() {
+    const thead = document.getElementById('annualTableHead');
+    const tbody = document.getElementById('annualTableBody');
+    const tfoot = document.getElementById('annualTableFoot');
+    const year = APP_STATE.annualYear;
+
+    initAnnualMatrix(year);
+    const data = APP_STATE.annualMatrix[year];
+
+    let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
+      <th rowspan="2" class="annual-sticky-th-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[170px] min-w-[170px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">品目名</th>
+      <th rowspan="2" class="annual-sticky-th-2 bg-slate-800 text-center px-1 py-1 text-[11px] font-bold text-slate-300 w-[50px] min-w-[50px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">入数</th>`;
+
+    for (let m = 1; m <= 12; m++) {
+      h1 += `<th colspan="3" class="annual-th-top bg-slate-800 text-center py-1 px-1 border-r border-b border-slate-600 w-[150px] min-w-[150px]">
+        <span class="text-xs font-black tracking-wider text-slate-100">${m}月度</span>
+      </th>`;
+    }
+    h1 += `<th colspan="2" class="annual-th-top bg-indigo-950 text-center py-1 px-1 border-b border-slate-600 w-[130px] min-w-[130px]">
+      <span class="text-xs font-black tracking-wider text-indigo-200">年間合計</span>
+    </th></tr>`;
+
+    let h2 = `<tr class="divide-x divide-slate-600 text-[10px] bg-slate-900 text-slate-300 h-[24px]">`;
+    for (let m = 1; m <= 12; m++) {
+      h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[48px] bg-blue-950 text-blue-200 border-b border-slate-700">販売</th>
+             <th class="annual-th-sub text-center py-0.5 font-bold w-[50px] bg-indigo-950 text-indigo-200 border-b border-slate-700">製造</th>
+             <th class="annual-th-sub text-center py-0.5 font-bold w-[52px] bg-amber-950 text-amber-200 border-r border-slate-600 border-b border-slate-700">在庫</th>`;
+    }
+    h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[65px] bg-slate-900 text-blue-200 border-b border-slate-700">販売計</th>
+           <th class="annual-th-sub text-center py-0.5 font-bold w-[65px] bg-slate-900 text-indigo-200 border-b border-slate-700">製造計</th></tr>`;
+    thead.innerHTML = h1 + h2;
+
+    let bHtml = '';
+    const monthlyTotalSales = new Array(13).fill(0);
+    const monthlyTotalMake = new Array(13).fill(0);
+
+    APP_STATE.products.forEach((p, rowIdx) => {
+      const isEven = (rowIdx % 2 === 1);
+      const rowBgClass = isEven ? 'bg-slate-50/90' : 'bg-white';
+      const fixedColBg = isEven ? 'bg-slate-100' : 'bg-slate-50';
+
+      let annualProdSalesSum = 0;
+      let annualProdMakeSum = 0;
+      let runningStock = p.masterInitStock || 0;
+
+      let monthCells = '';
+      for (let m = 1; m <= 12; m++) {
+        const sVal = data[p.id]?.[m]?.sales || 0;
+        const mVal = data[p.id]?.[m]?.make || 0;
+        annualProdSalesSum += sVal;
+        annualProdMakeSum += mVal;
+        monthlyTotalSales[m] += sVal;
+        monthlyTotalMake[m] += mVal;
+
+        runningStock = runningStock + mVal - sVal;
+        let stockStyle = 'text-slate-800 font-semibold';
+        if (runningStock < 0) {
+          stockStyle = 'bg-rose-600 text-white font-black px-1 rounded shadow-sm';
+        } else if (runningStock < p.safeStock) {
+          stockStyle = 'text-rose-600 font-black bg-rose-50 border border-rose-300 px-1 rounded shadow-sm';
+        }
+
+        monthCells += `
+          <td class="p-0 text-center w-[48px] min-w-[48px] bg-blue-50/20">
+            <input type="number" min="0" step="1" value="${sVal > 0 ? sVal : ''}" placeholder="-"
+              data-apid="${p.id}" data-month="${m}" data-type="sales"
+              class="annual-sales-input w-full h-7 text-center font-bold text-slate-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs px-0.5 transition">
+          </td>
+          <td class="p-0 text-center w-[50px] min-w-[50px] bg-indigo-50/30">
+            <input type="number" min="0" step="1" value="${mVal > 0 ? mVal : ''}" placeholder="-"
+              data-apid="${p.id}" data-month="${m}" data-type="make"
+              class="annual-make-input w-full h-7 text-center font-black text-indigo-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-indigo-600 text-xs px-0.5 transition">
+          </td>
+          <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] border-r border-slate-300 bg-amber-50/20">
+            <span class="${stockStyle} block text-right">${runningStock.toLocaleString()}</span>
+          </td>`;
+      }
+
+      bHtml += `
+        <tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-emerald-50/60 transition">
+          <td class="annual-sticky-col-1 ${fixedColBg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
+            <div class="truncate max-w-[160px] font-bold" title="${p.name}">${p.name}</div>
+            <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''}</div>
+          </td>
+          <td class="annual-sticky-col-2 ${fixedColBg} px-1 py-1.5 text-center text-xs font-medium text-slate-600 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]">
+            ${p.packQty || 1}
+          </td>
+          ${monthCells}
+          <td class="text-right px-2 py-1.5 text-xs font-black text-blue-800 bg-slate-50">${annualProdSalesSum.toLocaleString()}</td>
+          <td class="text-right px-2 py-1.5 text-xs font-black text-indigo-800 bg-slate-50">${annualProdMakeSum.toLocaleString()}</td>
+        </tr>`;
+    });
+    tbody.innerHTML = bHtml;
+
+    let fHtml = `<tr class="divide-x divide-slate-400 text-xs text-slate-900 bg-slate-200">
+      <td class="annual-sticky-col-1 bg-slate-300 px-2 py-2 font-black text-slate-900 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)]">月別合計</td>
+      <td class="annual-sticky-col-2 bg-slate-300 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]"></td>`;
+
+    let grandSales = 0, grandMake = 0;
+    for (let m = 1; m <= 12; m++) {
+      grandSales += monthlyTotalSales[m];
+      grandMake += monthlyTotalMake[m];
+      fHtml += `
+        <td class="text-center py-2 font-black text-blue-900 bg-blue-100/60">${monthlyTotalSales[m] > 0 ? monthlyTotalSales[m].toLocaleString() : '-'}</td>
+        <td class="text-center py-2 font-black text-indigo-900 bg-indigo-100/60">${monthlyTotalMake[m] > 0 ? monthlyTotalMake[m].toLocaleString() : '-'}</td>
+        <td class="border-r border-slate-400 bg-slate-200"></td>`;
+    }
+    fHtml += `
+      <td class="text-right px-2 py-2 font-black text-blue-900 bg-slate-300">${grandSales.toLocaleString()}</td>
+      <td class="text-right px-2 py-2 font-black text-indigo-900 bg-slate-300">${grandMake.toLocaleString()}</td>
+    </tr>`;
+    tfoot.innerHTML = fHtml;
+
+    document.querySelectorAll('.annual-sales-input, .annual-make-input').forEach(input => {
+      input.addEventListener('change', function() {
+        const pId = parseInt(this.dataset.apid, 10);
+        const m = parseInt(this.dataset.month, 10);
+        const type = this.dataset.type;
+        const val = Math.max(0, parseInt(this.value, 10) || 0);
+        if (APP_STATE.annualMatrix[year][pId][m]) {
+          APP_STATE.annualMatrix[year][pId][m][type] = val;
+        }
+        renderAnnualTable();
+      });
+    });
+  }
+
+  function setupAnnualSalesCsvModal() {
+    const modal = document.getElementById('annualSalesCsvModal');
+    const fileInput = document.getElementById('annualSalesCsvFileInput');
+    const btnApply = document.getElementById('btnApplyAnnualSalesCsvData');
+    const previewArea = document.getElementById('annualSalesCsvPreviewArea');
+    const previewList = document.getElementById('annualSalesCsvPreviewList');
+    const matchCount = document.getElementById('annualSalesCsvMatchCount');
+
+    document.getElementById('btnOpenAnnualSalesCsvModal').addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      document.getElementById('annualModalTargetYearText').textContent = `${APP_STATE.annualYear}年`;
+      fileInput.value = '';
+      btnApply.disabled = true;
+      previewArea.classList.add('hidden');
+    });
+
+    const closeModal = () => modal.classList.add('hidden');
+    document.getElementById('btnCloseAnnualSalesCsvModal').addEventListener('click', closeModal);
+    document.getElementById('btnCancelAnnualSalesCsvModal').addEventListener('click', closeModal);
+
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        let text = '';
+        try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
+        catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
+
+        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        const rows = lines.map(line => line.split(','));
+        const targetYear = APP_STATE.annualYear;
+
+        let colMap = {};
+        for (let m = 1; m <= 12; m++) {
+          colMap[m] = 7 + (m - 1) * 6;
+        }
+
+        const totalSalesByProduct = {};
+        APP_STATE.products.forEach(p => {
+          totalSalesByProduct[p.id] = { total: 0 };
+          for (let m = 1; m <= 12; m++) totalSalesByProduct[p.id][m] = 0;
+        });
+
+        let hitRowCount = 0;
+        for (let r = 8; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row || row.length < 5) continue;
+          const rowCode = cleanNum(row[0]);
+          const rowName = String(row[1] || '').trim();
+
+          let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
+          if (!matchedP && rowName) {
+            matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
+          }
+
+          if (matchedP) {
+            for (let m = 1; m <= 12; m++) {
+              const val = cleanNum(row[colMap[m]]);
+              totalSalesByProduct[matchedP.id][m] += val;
+              totalSalesByProduct[matchedP.id].total += val;
+            }
+            hitRowCount++;
+          }
+        }
+
+        if (hitRowCount > 0) {
+          btnApply.disabled = false;
+          previewArea.classList.remove('hidden');
+          matchCount.textContent = `${hitRowCount}品目 照合成功 (${targetYear}計画)`;
+          previewList.innerHTML = APP_STATE.products.map(p => `
+            <div class="flex items-center justify-between py-1 border-b border-slate-100">
+              <span class="font-bold text-slate-800">${p.name}</span>
+              <span class="font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                年間計: ${totalSalesByProduct[p.id].total.toLocaleString()} c/s
+              </span>
+            </div>`).join('');
+          APP_STATE._tempAnnualSales = totalSalesByProduct;
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    btnApply.addEventListener('click', function() {
+      if (!APP_STATE._tempAnnualSales) return;
+      const year = APP_STATE.annualYear;
+      initAnnualMatrix(year);
+      APP_STATE.products.forEach(p => {
+        for (let m = 1; m <= 12; m++) {
+          APP_STATE.annualMatrix[year][p.id][m].sales = APP_STATE._tempAnnualSales[p.id][m] || 0;
+        }
+      });
+      renderAnnualTable();
+      closeModal();
+      showToast(`${year}年度の営業販売計画を反映しました！`);
+    });
+  }
+
+  window.addEventListener('load', function() {
+    setupAnnualSalesCsvModal();
+
+    document.getElementById('annualYearSelect').addEventListener('change', function() {
+      APP_STATE.annualYear = parseInt(this.value, 10);
+      document.getElementById('annualYearBannerTitle').textContent = `${APP_STATE.annualYear}年度 年間販売・製造・在庫計画表`;
+      renderAnnualTable();
+    });
+
+    document.getElementById('btnSyncToDailyTarget').addEventListener('click', () => {
+      const y = APP_STATE.year;
+      const m = APP_STATE.month;
+      if (APP_STATE.annualMatrix[y]) {
+        APP_STATE.products.forEach(p => {
+          const planMake = APP_STATE.annualMatrix[y][p.id]?.[m]?.make;
+          if (planMake !== undefined && planMake > 0) p.target = planMake;
+        });
+      }
+      switchMainTab('daily');
+      showToast(`年間計画の${m}月度製造数を日別計画の目標へ反映しました！`, '🔗');
+    });
+
+    document.getElementById('btnSaveAnnualPlan').addEventListener('click', () => {
+      showToast(`${APP_STATE.annualYear}年度の年間計画を保存しました！`, '💾');
+    });
+  });
+</script>

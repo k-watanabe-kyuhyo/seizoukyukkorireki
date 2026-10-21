@@ -3,142 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>製造計画・入出庫管理システム</title>
+  <title>製造計画・入出庫・年間計画統合システム</title>
   
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Google Fonts: Inter & Noto Sans JP -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   
   <style>
-    body {
-      font-family: 'Inter', 'Noto Sans JP', sans-serif;
-    }
-
-    /* 数値入力欄のスピンボタン（▲▼矢印）を非表示化 */
+    body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
     input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    input[type="number"] {
-      -moz-appearance: textfield;
-    }
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #cbd5e1; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-    /* カスタムスクロールバー */
-    ::-webkit-scrollbar {
-      width: 7px;
-      height: 7px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #cbd5e1;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #94a3b8;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #64748b;
-    }
-
-    /* テーブルヘッダー＆固定列の sticky スタイル（隙間ゼロ密着固定） */
-    .th-date-header {
-      position: sticky;
-      top: 0;
-      z-index: 32;
-      height: 28px;
-    }
-    .th-sub-header {
-      position: sticky;
-      top: 28px;
-      z-index: 31;
-      height: 24px;
-    }
-
+    /* 日別テーブル用固定列（品目名列のみ固定） */
+    .th-date-header { position: sticky; top: 0; z-index: 30; height: 28px; }
+    .th-sub-header { position: sticky; top: 28px; z-index: 29; height: 24px; }
     .sticky-corner-1 { position: sticky; top: 0; left: 0; z-index: 45; }
-    .sticky-corner-2 { position: sticky; top: 0; left: 140px; z-index: 45; }
-    .sticky-corner-3 { position: sticky; top: 0; left: 205px; z-index: 45; }
-    .sticky-corner-4 { position: sticky; top: 0; left: 270px; z-index: 45; }
-
     .sticky-col-1 { position: sticky; left: 0; z-index: 20; }
-    .sticky-col-2 { position: sticky; left: 140px; z-index: 20; }
-    .sticky-col-3 { position: sticky; left: 205px; z-index: 20; }
-    .sticky-col-4 { position: sticky; left: 270px; z-index: 20; }
 
-    /* 行ホバー時のハイライト強化 */
-    #tableBody tr:hover td {
-      background-color: #dbeafe !important;
-    }
-    #tableBody tr:hover td.sticky-col-1,
-    #tableBody tr:hover td.sticky-col-2,
-    #tableBody tr:hover td.sticky-col-3,
-    #tableBody tr:hover td.sticky-col-4 {
-      background-color: #bfdbfe !important;
-    }
+    #tableBody tr:hover td { background-color: #dbeafe !important; }
+    #tableBody tr:hover td.sticky-col-1 { background-color: #bfdbfe !important; }
 
-    /* KPI上部固定時のスタイル */
     #kpiBar.fixed-pinned {
-      position: sticky;
-      top: 52px;
-      z-index: 25;
-      background: rgba(248, 250, 252, 0.98);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      border-bottom: 1px solid #cbd5e1;
+      position: sticky; top: 52px; z-index: 25;
+      background: rgba(248, 250, 252, 0.98); backdrop-filter: blur(8px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-bottom: 1px solid #cbd5e1;
     }
 
-    /* ========================================================= */
-    /* 印刷スタイル定義（A4横・ジャスト1ページ・白紙2枚目完全防止） */
-    /* ========================================================= */
+    /* 年間計画テーブル用固定列（品目名列のみ固定） */
+    .annual-sticky-col-1 { position: sticky; left: 0; z-index: 25; }
+    .annual-sticky-th-1 { position: sticky; top: 0; left: 0; z-index: 45; }
+    .annual-th-top { position: sticky; top: 0; z-index: 30; height: 28px; }
+    .annual-th-sub { position: sticky; top: 28px; z-index: 29; height: 24px; }
+
+    #annualTableBody tr:hover td { background-color: #f0fdf4 !important; }
+    #annualTableBody tr:hover td.annual-sticky-col-1 { background-color: #dcfce7 !important; }
+
+    /* A4横1枚印刷専用スタイル */
     @media print {
-      @page {
-        size: A4 landscape;
-        margin: 8mm 10mm;
-      }
+      @page { size: A4 landscape; margin: 8mm 10mm; }
       html, body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #fff !important;
-        width: 100% !important;
-        height: 100% !important;
-        overflow: hidden !important; /* 2枚目の白紙を物理的に遮断 */
+        margin: 0 !important; padding: 0 !important; background: #fff !important;
+        width: 100% !important; height: 100% !important; overflow: hidden !important;
       }
-      /* 元画面の通常UIをすべて非表示 */
-      body > *:not(#print-clean-wrapper) {
-        display: none !important;
-      }
-      /* A4横専用エリアのみ表示 */
+      body > *:not(#print-clean-wrapper) { display: none !important; }
       #print-clean-wrapper {
-        display: block !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+        display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important;
+        page-break-after: avoid !important; break-after: avoid !important;
+        page-break-inside: avoid !important; break-inside: avoid !important;
       }
       #print-clean-wrapper table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        table-layout: fixed !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
+        width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important;
+        page-break-inside: avoid !important; break-inside: avoid !important;
       }
     }
     @media screen {
-      #print-clean-wrapper {
-        display: none !important;
-      }
+      #print-clean-wrapper { display: none !important; }
     }
   </style>
 </head>
 <body class="bg-slate-200/80 text-slate-800 antialiased min-h-screen flex flex-col">
 
-  <!-- 1. メインヘッダーバー -->
+  <!-- 1. メインヘッダー（画面切り替えタブ内蔵） -->
   <header class="bg-slate-900 text-white px-4 py-2 flex flex-wrap items-center justify-between gap-3 shadow-md sticky top-0 z-50">
     <div class="flex items-center space-x-3">
       <div class="bg-blue-600 text-white p-1.5 rounded-lg shadow">
@@ -146,18 +77,38 @@
       </div>
       <div>
         <h1 class="font-extrabold text-sm sm:text-base tracking-wide flex items-center gap-2">
-          製造計画・入出庫管理システム
+          製造計画・入出庫・年間計画統合システム
         </h1>
-        <p class="text-[10px] text-slate-400">日別製造割り振りと出庫欠品シミュレーション</p>
+        <p class="text-[10px] text-slate-400">大日程(年間S&OP)から日別製造計画への同期化連携</p>
       </div>
+    </div>
+
+    <!-- 画面切り替えタブ -->
+    <div class="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700 shadow-inner">
+      <button id="navTabDaily" onclick="switchMainTab('daily')" class="px-3 py-1 rounded text-xs font-black transition flex items-center gap-1.5 bg-blue-600 text-white shadow">
+        <span>🏭</span> 日別製造・入出庫管理
+      </button>
+      <button id="navTabAnnual" onclick="switchMainTab('annual')" class="px-3 py-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5">
+        <span>📅</span> 年間計画 (S&OP)
+      </button>
     </div>
 
     <!-- 年月切り替え & 状態バッジ -->
     <div class="flex items-center space-x-2">
-      <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+      <div id="headerMonthControls" class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
         <button id="btnPrevMonth" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs transition">◀</button>
         <span id="currentYearMonthText" class="px-3 py-1 font-bold text-xs sm:text-sm tracking-wider text-white">2026年10月度</span>
         <button id="btnNextMonth" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs transition">▶</button>
+      </div>
+
+      <div id="headerYearControls" class="hidden items-center bg-slate-800 rounded-lg px-2 py-1 border border-slate-700">
+        <span class="text-xs text-slate-400 mr-1.5 font-bold">計画対象年:</span>
+        <select id="annualYearSelect" class="bg-slate-900 text-white font-black text-xs rounded px-1.5 py-0.5 outline-none border border-slate-600 cursor-pointer">
+          <option value="2025">2025年度</option>
+          <option value="2026" selected>2026年度</option>
+          <option value="2027">2027年度</option>
+          <option value="2028">2028年度</option>
+        </select>
       </div>
 
       <span id="connectionBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1">
@@ -166,209 +117,229 @@
       </span>
     </div>
 
-    <!-- アクションボタン群 -->
-    <div class="flex items-center space-x-2 flex-wrap">
+    <!-- 日別用ボタン群 -->
+    <div id="dailyActionButtons" class="flex items-center space-x-2 flex-wrap">
       <button id="btnSaveToSheet" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
         シートへ保存
       </button>
-
-      <!-- 実在庫CSV取込ボタン（在庫報告書から月初確定） -->
-      <button id="btnOpenStockCsvModal" class="bg-cyan-700 hover:bg-cyan-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95" title="在庫報告書CSVから月初実在庫を確定">
-        <span>📦</span>
-        実在庫CSV取込
+      <button id="btnOpenStockCsvModal" class="bg-cyan-700 hover:bg-cyan-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <span>📦</span> 実在庫CSV取込
       </button>
-
-      <!-- 出庫CSV取込ボタン -->
       <button id="btnOpenCsvModal" class="bg-teal-700 hover:bg-teal-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         出庫CSV取込
       </button>
-      <button id="btnExportCsv" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1.5 rounded text-xs transition" title="現在の画面内容をCSVエクスポート">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+    </div>
+
+    <!-- 年間用ボタン群 -->
+    <div id="annualActionButtons" class="hidden items-center space-x-2 flex-wrap">
+      <button id="btnOpenAnnualSalesCsvModal" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <span>📊</span> 営業販売計画CSV取込
+      </button>
+      <button id="btnSaveAnnualPlan" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <span>💾</span> 年間計画を保存
+      </button>
+      <button id="btnSyncToDailyTarget" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <span>🔗</span> 日別計画へ目標を同期
       </button>
     </div>
   </header>
 
-  <!-- 2. サマリーバー（KPIカード格納・開閉対応、初期状態で格納） -->
-  <div id="kpiBar" class="px-4 py-2 transition-all duration-200 border-b border-slate-300 bg-slate-100/90">
-    <div class="flex items-center justify-between mb-1.5">
-      <div id="kpiCompactSummary" class="text-xs font-bold text-slate-700 flex items-center gap-4 flex-wrap">
-        <span>サマリー:</span>
-        <span>製造計: <b id="compactMake" class="text-blue-700 text-sm">0</b> c/s</span>
-        <span class="text-slate-400">|</span>
-        <span>目標: <b id="compactTarget" class="text-slate-800 text-sm">24,860</b> c/s (<b id="compactRate" class="text-blue-600">0%</b>)</span>
-        <span class="text-slate-400">|</span>
-        <span>出庫計: <b id="compactOut" class="text-amber-700 text-sm">0</b> c/s</span>
-        <span class="text-slate-400">|</span>
-        <span>欠品: <b id="compactShort" class="text-emerald-700 text-sm">0</b> 件</span>
+  <!-- ========================================== -->
+  <!-- 2. 日別製造・入出庫管理ビュー (メイン)     -->
+  <!-- ========================================== -->
+  <div id="viewDailyContainer" class="flex-1 flex flex-col overflow-hidden">
+    <!-- KPIサマリーバー (初期状態で格納) -->
+    <div id="kpiBar" class="px-4 py-2 transition-all duration-200 border-b border-slate-300 bg-slate-100/90">
+      <div class="flex items-center justify-between mb-1.5">
+        <div id="kpiCompactSummary" class="text-xs font-bold text-slate-700 flex items-center gap-4 flex-wrap">
+          <span>サマリー:</span>
+          <span>製造計: <b id="compactMake" class="text-blue-700 text-sm">0</b> c/s</span>
+          <span class="text-slate-400">|</span>
+          <span>目標(年間計画連動): <b id="compactTarget" class="text-slate-800 text-sm">24,860</b> c/s (<b id="compactRate" class="text-blue-600">0%</b>)</span>
+          <span class="text-slate-400">|</span>
+          <span>出庫計: <b id="compactOut" class="text-amber-700 text-sm">0</b> c/s</span>
+          <span class="text-slate-400">|</span>
+          <span>欠品: <b id="compactShort" class="text-emerald-700 text-sm">0</b> 件</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button id="btnPinKpi" class="text-[11px] text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition flex items-center gap-1">
+            <span id="pinIcon">📌</span> <span id="pinText">上部に固定</span>
+          </button>
+          <button id="btnToggleKpi" class="text-[11px] text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition flex items-center gap-1">
+            <span id="collapseIcon">▲</span> <span id="collapseText">カードを展開</span>
+          </button>
+        </div>
       </div>
+
+      <div id="kpiCardsArea" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+        <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+          <div>
+            <div class="text-[10px] text-slate-500 font-bold uppercase">月間計画製造数</div>
+            <div class="text-lg font-black text-blue-700 tracking-tight" id="kpiTotalMake">0 <span class="text-xs font-normal text-slate-500">c/s</span></div>
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">🏭</div>
+        </div>
+        <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+          <div>
+            <div class="text-[10px] text-slate-500 font-bold uppercase">年間計画月間枠 / 達成率</div>
+            <div class="text-lg font-black text-slate-800 tracking-tight" id="kpiTargetSummary">24,860 <span class="text-xs font-bold text-blue-600" id="kpiTargetRate">(0%)</span></div>
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">🎯</div>
+        </div>
+        <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+          <div>
+            <div class="text-[10px] text-slate-500 font-bold uppercase">出庫計 (実績＋予定)</div>
+            <div class="text-lg font-black text-amber-700 tracking-tight" id="kpiTotalOut">0 <span class="text-xs font-normal text-slate-500">c/s</span></div>
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">🚚</div>
+        </div>
+        <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
+          <div>
+            <div class="text-[10px] text-slate-500 font-bold uppercase">欠品ショート警告</div>
+            <div class="text-lg font-black text-emerald-600 tracking-tight" id="kpiAlertCount">0 <span class="text-xs font-normal text-slate-500">件</span></div>
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs" id="kpiAlertIcon">✔</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ツールバー -->
+    <div class="px-4 py-2 bg-white/90 border-b border-slate-300 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0" id="periodTabs"></div>
       <div class="flex items-center space-x-2">
-        <button id="btnPinKpi" class="text-[11px] text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition flex items-center gap-1">
-          <span id="pinIcon">📌</span> <span id="pinText">上部に固定</span>
+        <button id="btnPrintWeekly" class="px-2.5 py-1 rounded font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 transition flex items-center gap-1 active:scale-95" title="A4横1枚で印刷">
+          <span>🖨</span> 印刷
         </button>
-        <button id="btnToggleKpi" class="text-[11px] text-slate-600 hover:text-slate-900 px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition flex items-center gap-1">
-          <span id="collapseIcon">▲</span> <span id="collapseText">カードを展開</span>
+        <button id="btnAutoAllocate" class="px-2.5 py-1 rounded font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition flex items-center gap-1 active:scale-95">
+          <span>📋</span> 目標から出庫を仮計算
+        </button>
+        <button id="btnClearOutputs" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
+          <span>☁</span> 出庫クリア
+        </button>
+        <button id="btnReload" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
+          <span>🔄</span> 再読込
         </button>
       </div>
     </div>
 
-    <!-- KPI大カード群（初期格納状態） -->
-    <div id="kpiCardsArea" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-500 font-bold uppercase">月間計画製造数</div>
-          <div class="text-lg font-black text-blue-700 tracking-tight" id="kpiTotalMake">0 <span class="text-xs font-normal text-slate-500">c/s</span></div>
-        </div>
-        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">🏭</div>
+    <!-- ガイドバー -->
+    <div class="px-4 py-1.5 bg-slate-100 text-[11px] flex flex-wrap items-center justify-between border-b border-slate-300 gap-2">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1 font-bold text-blue-700">
+          <span class="w-2.5 h-2.5 bg-blue-100 border border-blue-400 rounded-sm"></span> 青セル ＝ 製造計画の直接入力
+        </span>
+        <span class="inline-flex items-center gap-1 font-bold text-amber-700">
+          <span class="w-2.5 h-2.5 bg-amber-100 border border-amber-400 rounded-sm"></span> 橙セル ＝ 出庫予定の直接入力
+        </span>
+        <span id="activeEditingBadge" class="hidden items-center gap-1.5 bg-slate-900 text-white px-2 py-0.5 rounded shadow text-[11px] font-bold border border-slate-700">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-300">入力中:</span>
+          <span id="activeEditingText" class="text-white font-extrabold"></span>
+        </span>
       </div>
-      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-500 font-bold uppercase">販売目標 / 計画達成率</div>
-          <div class="text-lg font-black text-slate-800 tracking-tight" id="kpiTargetSummary">24,860 <span class="text-xs font-bold text-blue-600" id="kpiTargetRate">(0%)</span></div>
-        </div>
-        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">🎯</div>
-      </div>
-      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-500 font-bold uppercase">出庫計 (実績＋予定)</div>
-          <div class="text-lg font-black text-amber-700 tracking-tight" id="kpiTotalOut">0 <span class="text-xs font-normal text-slate-500">c/s</span></div>
-        </div>
-        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">🚚</div>
-      </div>
-      <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
-        <div>
-          <div class="text-[10px] text-slate-500 font-bold uppercase">欠品ショート警告</div>
-          <div class="text-lg font-black text-emerald-600 tracking-tight" id="kpiAlertCount">0 <span class="text-xs font-normal text-slate-500">件</span></div>
-        </div>
-        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs" id="kpiAlertIcon">✔</div>
+      <div class="flex items-center gap-2">
+        <span id="stockStatusBadge" class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1">
+          🔗 前月末残数を月初在庫へ自動引継中
+        </span>
+        <span class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold border border-rose-300">
+          残数赤太文字＝安全在庫割れ / 赤背景＝欠品警告
+        </span>
       </div>
     </div>
+
+    <!-- 欠品アラートバナー -->
+    <div id="alertBanner" class="hidden mx-4 mt-2 p-2.5 bg-rose-50 border-l-4 border-rose-500 text-rose-900 rounded-r shadow-sm text-xs flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-rose-600 font-extrabold text-sm">⚠</span>
+        <div>
+          <span class="font-black text-rose-700" id="alertBannerTitle">在庫ショート（欠品・安全在庫割れ）を検知しました</span>
+          <div class="text-[11px] text-rose-600">製造計画を前倒しで割り振ってください。</div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('alertBanner').classList.add('hidden')" class="text-rose-400 hover:text-rose-700 font-bold px-2 py-1">✕</button>
+    </div>
+
+    <!-- メインテーブル -->
+    <main class="flex-1 px-4 py-2 overflow-hidden flex flex-col">
+      <div class="flex-1 bg-white rounded-lg shadow border border-slate-400 overflow-auto relative">
+        <table id="mainTable" class="w-max border-collapse text-left select-none text-xs">
+          <thead id="tableHead" class="text-slate-200 font-bold select-none"></thead>
+          <tbody id="tableBody" class="divide-y divide-slate-300 font-medium"></tbody>
+          <tfoot id="tableFoot" class="sticky bottom-0 z-30 font-bold"></tfoot>
+        </table>
+      </div>
+    </main>
   </div>
 
-  <!-- 3. コントロールツールバー -->
-  <div class="px-4 py-2 bg-white/90 border-b border-slate-300 flex flex-wrap items-center justify-between gap-2 text-xs">
-    <!-- 期間切り替えタブ（動的生成：月曜〜日曜サイクル） -->
-    <div class="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0" id="periodTabs"></div>
-
-    <!-- 補助ツールボタン -->
-    <div class="flex items-center space-x-2">
-      <button id="btnPrintWeekly" class="px-2.5 py-1 rounded font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 transition flex items-center gap-1 active:scale-95" title="表示中の週の製造予定をA4横1枚で印刷">
-        <span>🖨</span> 印刷
-      </button>
-      <button id="btnAutoAllocate" class="px-2.5 py-1 rounded font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition flex items-center gap-1 active:scale-95">
-        <span>📋</span> 目標から出庫を仮計算
-      </button>
-      <button id="btnClearOutputs" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
-        <span>☁</span> 出庫クリア
-      </button>
-      <button id="btnReload" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
-        <span>🔄</span> 再読込
-      </button>
-    </div>
-  </div>
-
-  <!-- ガイド・アラートバナー -->
-  <div class="px-4 py-1.5 bg-slate-100 text-[11px] flex flex-wrap items-center justify-between border-b border-slate-300 gap-2">
-    <div class="flex items-center gap-3">
-      <span class="inline-flex items-center gap-1 font-bold text-blue-700">
-        <span class="w-2.5 h-2.5 bg-blue-100 border border-blue-400 rounded-sm"></span> 青セル ＝ 製造計画の直接入力
-      </span>
-      <span class="inline-flex items-center gap-1 font-bold text-amber-700">
-        <span class="w-2.5 h-2.5 bg-amber-100 border border-amber-400 rounded-sm"></span> 橙セル ＝ 出庫予定の直接入力（欠品シミュレーション用）
-      </span>
-      <span class="text-slate-500 hidden md:inline">※数値を入力すると、当日以降月末までの在庫数が瞬時に再計算されます。</span>
-      
-      <!-- 編集中品目のリアルタイム表示バッジ -->
-      <span id="activeEditingBadge" class="hidden items-center gap-1.5 bg-slate-900 text-white px-2 py-0.5 rounded shadow text-[11px] font-bold border border-slate-700">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span class="text-slate-300">入力中:</span>
-        <span id="activeEditingText" class="text-white font-extrabold"></span>
-      </span>
-    </div>
-    <div class="flex items-center gap-2">
-      <!-- 在庫ステータス表示バッジ（実在庫確定 or 仮在庫引継） -->
-      <span id="stockStatusBadge" class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1">
-        🔗 前月末残数を月初在庫へ自動引継中
-      </span>
-      <span class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold border border-rose-300">
-        残数赤太文字＝安全在庫割れ / 赤背景＝欠品警告
-      </span>
-    </div>
-  </div>
-
-  <!-- 在庫アラート一覧バナー（条件合致時のみ表示） -->
-  <div id="alertBanner" class="hidden mx-4 mt-2 p-2.5 bg-rose-50 border-l-4 border-rose-500 text-rose-900 rounded-r shadow-sm text-xs flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <span class="text-rose-600 font-extrabold text-sm">⚠</span>
-      <div>
-        <span class="font-black text-rose-700" id="alertBannerTitle">在庫ショート（欠品・安全在庫割れ）を検知しました</span>
-        <div class="text-[11px] text-rose-600" id="alertBannerDesc">以下の品目で残数がマイナスまたは安全在庫を下回る日程があります。製造計画を前倒しで割り振ってください。</div>
+  <!-- ========================================== -->
+  <!-- 3. 年間計画シミュレーションビュー (S&OP)  -->
+  <!-- ========================================== -->
+  <div id="viewAnnualContainer" class="hidden flex-1 flex flex-col overflow-hidden">
+    <div class="px-4 py-2 bg-indigo-50 border-b border-indigo-200 text-xs flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <span class="font-black text-indigo-900 flex items-center gap-1.5 text-sm">
+          <span>📅</span> <span id="annualYearBannerTitle">2026年度 年間販売・製造・在庫計画表</span>
+        </span>
+        <span class="text-slate-600 hidden md:inline">
+          営業の販売計画を取り込み、各月の「製造」予定を入力すると、右方向へ月末在庫が自動連動計算されます。
+        </span>
+      </div>
+      <div class="flex items-center gap-3 text-[11px]">
+        <span class="flex items-center gap-1 font-bold text-slate-700">
+          <span class="w-2.5 h-2.5 bg-blue-100 border border-blue-400 rounded-sm"></span> 販売 ＝ 営業計画
+        </span>
+        <span class="flex items-center gap-1 font-bold text-indigo-700">
+          <span class="w-2.5 h-2.5 bg-indigo-100 border border-indigo-500 rounded-sm"></span> 製造 ＝ 工場計画枠 (手入力)
+        </span>
+        <span class="flex items-center gap-1 font-bold text-amber-700">
+          <span class="w-2.5 h-2.5 bg-amber-100 border border-amber-400 rounded-sm"></span> 在庫 ＝ 連動計算
+        </span>
       </div>
     </div>
-    <button onclick="document.getElementById('alertBanner').classList.add('hidden')" class="text-rose-400 hover:text-rose-700 font-bold px-2 py-1">✕</button>
+
+    <!-- 年間データテーブル -->
+    <main class="flex-1 px-4 py-2 overflow-hidden flex flex-col">
+      <div class="flex-1 bg-white rounded-lg shadow border border-slate-400 overflow-auto relative">
+        <table id="annualTable" class="w-max border-collapse text-left select-none text-xs">
+          <thead id="annualTableHead" class="text-slate-200 font-bold select-none"></thead>
+          <tbody id="annualTableBody" class="divide-y divide-slate-300 font-medium"></tbody>
+          <tfoot id="annualTableFoot" class="sticky bottom-0 z-30 font-bold bg-slate-200"></tfoot>
+        </table>
+      </div>
+    </main>
   </div>
 
-  <!-- 4. メインデータグリッドコンテナ -->
-  <main class="flex-1 px-4 py-2 overflow-hidden flex flex-col">
-    <div class="flex-1 bg-white rounded-lg shadow border border-slate-400 overflow-auto relative">
-      <table id="mainTable" class="w-max border-collapse text-left select-none text-xs">
-        <thead id="tableHead" class="text-slate-200 font-bold select-none">
-          <!-- JSで動的生成：ヘッダー1行目（日付）＆ 2行目（製造/出庫/残数） -->
-        </thead>
-        <tbody id="tableBody" class="divide-y divide-slate-300 font-medium">
-          <!-- JSで動的生成：品目別行データ -->
-        </tbody>
-        <tfoot id="tableFoot" class="sticky bottom-0 z-30 font-bold">
-          <!-- JSで動的生成：日別合計行 -->
-        </tfoot>
-      </table>
-    </div>
-  </main>
-
-  <!-- 5. 実在庫CSV取込モーダル（余計な注記・ルール枠を排除したクリーン構成） -->
+  <!-- 実在庫CSVモーダル (シンプル版) -->
   <div id="stockCsvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
-        <h3 class="font-bold text-sm flex items-center gap-2">
-          <span>📦</span>
-          実在庫CSV（在庫報告書）の取込
-        </h3>
+        <h3 class="font-bold text-sm flex items-center gap-2"><span>📦</span> 実在庫CSV（在庫報告書）の取込</h3>
         <button id="btnCloseStockCsvModal" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
       </div>
-      
       <div class="p-4 space-y-3 text-xs">
-        <p class="text-slate-600 leading-relaxed">
-          基幹システム等から出力した「<span class="font-bold text-cyan-800">在庫報告書(日付指定).csv</span>」を指定してください。
-        </p>
-
+        <p class="text-slate-600 leading-relaxed">基幹システム等から出力した「<span class="font-bold text-cyan-800">在庫報告書(日付指定).csv</span>」を指定してください。</p>
         <div>
           <label class="block font-bold text-slate-700 mb-1">在庫報告書CSVファイルを選択</label>
           <input type="file" id="stockCsvFileInput" accept=".csv,text/csv" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-cyan-700 file:text-white hover:file:bg-cyan-800 cursor-pointer border border-slate-300 rounded p-1">
         </div>
-
-        <!-- リアルタイム解析プレビューエリア -->
         <div id="stockCsvPreviewArea" class="hidden border border-slate-200 rounded-lg p-2.5 bg-slate-50 max-h-48 overflow-y-auto space-y-1.5">
           <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1">
             <span>解析プレビュー (全倉庫合算)</span>
             <span id="stockCsvMatchCount" class="text-cyan-700 font-black">0品目 照合成功</span>
           </div>
-          <div id="stockCsvPreviewList" class="space-y-1 text-[11px]">
-            <!-- 照合結果が並ぶ -->
-          </div>
+          <div id="stockCsvPreviewList" class="space-y-1 text-[11px]"></div>
         </div>
       </div>
-
       <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-end space-x-2 border-t border-slate-200">
         <button id="btnCancelStockCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
-        <button id="btnApplyStockCsvData" class="px-3.5 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>
-          この内容で月初実在庫を確定
-        </button>
+        <button id="btnApplyStockCsvData" class="px-3.5 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>この内容で月初実在庫を確定</button>
       </div>
     </div>
   </div>
 
-  <!-- 6. 出庫CSV取込モーダル（注記・ルール枠・テスト用サンプルリンクを完全撤去） -->
+  <!-- 出庫CSVモーダル (シンプル版) -->
   <div id="csvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
@@ -378,37 +349,60 @@
         </h3>
         <button id="btnCloseCsvModal" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
       </div>
-      
       <div class="p-4 space-y-3 text-xs">
-        <p class="text-slate-600 leading-relaxed">
-          基幹システム等から出力した「出庫実績CSV」を指定してください。
-        </p>
-
+        <p class="text-slate-600 leading-relaxed">基幹システム等から出力した「出庫実績CSV」を指定してください。</p>
         <div>
           <label class="block font-bold text-slate-700 mb-1">CSVファイルを選択</label>
           <input type="file" id="csvFileInput" accept=".csv,text/csv" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-teal-600 file:text-white hover:file:bg-teal-700 cursor-pointer border border-slate-300 rounded p-1">
         </div>
-
-        <!-- リアルタイム解析プレビューエリア -->
         <div id="csvPreviewArea" class="hidden border border-slate-200 rounded-lg p-2.5 bg-slate-50 max-h-48 overflow-y-auto space-y-1.5">
           <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1">
             <span>解析プレビュー</span>
-            <span id="csvMatchCount" class="text-teal-600">0品目 照合成功</span>
+            <span id="csvMatchCount" class="text-teal-600 font-bold">0品目 照合成功</span>
           </div>
-          <div id="csvPreviewList" class="space-y-1 text-[11px]">
-            <!-- 照合結果が並ぶ -->
-          </div>
+          <div id="csvPreviewList" class="space-y-1 text-[11px]"></div>
         </div>
       </div>
-
       <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-end space-x-2 border-t border-slate-200">
         <button id="btnCancelCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
-        <button id="btnApplyCsvData" class="px-3.5 py-1.5 rounded bg-teal-600 hover:bg-teal-500 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>
-          この内容で画面に反映 (上書き)
-        </button>
+        <button id="btnApplyCsvData" class="px-3.5 py-1.5 rounded bg-teal-600 hover:bg-teal-500 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>この内容で画面に反映 (上書き)</button>
       </div>
     </div>
   </div>
+
+  <!-- 年間販売計画CSVモーダル -->
+  <div id="annualSalesCsvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
+      <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
+        <h3 class="font-bold text-sm flex items-center gap-2"><span>📊</span> 営業年間販売計画CSVの取込</h3>
+        <button id="btnCloseAnnualSalesCsvModal" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
+      </div>
+      <div class="p-4 space-y-3 text-xs">
+        <p class="text-slate-600 leading-relaxed">
+          営業から受領した「<span class="font-bold text-indigo-800">販売計画CSV（■20261-12月販売計画.csv）</span>」を指定してください。<br>
+          対象年（<span id="annualModalTargetYearText" class="font-black text-indigo-700">2026年</span>計画）の各月列を自動検知して取り込みます。
+        </p>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">年間販売計画CSVファイルを選択</label>
+          <input type="file" id="annualSalesCsvFileInput" accept=".csv,text/csv" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer border border-slate-300 rounded p-1">
+        </div>
+        <div id="annualSalesCsvPreviewArea" class="hidden border border-slate-200 rounded-lg p-2.5 bg-slate-50 max-h-48 overflow-y-auto space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 border-b border-slate-200 pb-1">
+            <span>解析プレビュー (1〜12月販売計)</span>
+            <span id="annualSalesCsvMatchCount" class="text-indigo-700 font-black">0品目 照合成功</span>
+          </div>
+          <div id="annualSalesCsvPreviewList" class="space-y-1 text-[11px]"></div>
+        </div>
+      </div>
+      <div class="bg-slate-100 px-4 py-2.5 flex items-center justify-end space-x-2 border-t border-slate-200">
+        <button id="btnCancelAnnualSalesCsvModal" class="px-3 py-1.5 rounded bg-white hover:bg-slate-200 border border-slate-300 text-slate-700 font-bold transition">閉じる</button>
+        <button id="btnApplyAnnualSalesCsvData" class="px-3.5 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow transition active:scale-95 disabled:opacity-50" disabled>この内容で年間計画へ反映</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 入力アシストポップアップ -->
+  <div id="inputAssistTooltip" class="fixed pointer-events-none z-50 opacity-0 transform -translate-x-1/2 -translate-y-full transition-opacity duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-2 whitespace-nowrap border-2"></div>
 
   <!-- トースト通知 -->
   <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-xl text-xs flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
@@ -416,227 +410,43 @@
     <span id="toastMsg">保存しました</span>
   </div>
 
-  <!-- 入力アシスト：セルの真上に浮き出る品目名フロート吹き出し -->
-  <div id="inputAssistTooltip" class="fixed pointer-events-none z-50 opacity-0 transform -translate-x-1/2 -translate-y-full transition-opacity duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-2 whitespace-nowrap border-2">
-    <!-- JSで動的生成 -->
-  </div>
-
+  <!-- ========================================== -->
+  <!-- 4. 全機能統合スクリプト                   -->
+  <!-- ========================================== -->
   <script>
-    // ==========================================
-    // アプリケーション全体の状態管理（APP_STATE）
-    // ==========================================
+    // グローバル状態管理
     const APP_STATE = {
+      currentView: 'daily',
       year: 2026,
       month: 10,
-      baseYear: 2026,
-      baseMonth: 9,
       daysInMonth: 31,
-      currentPeriod: 'all', // 'w1', 'w2', 'w3', 'w4', 'w5', 'all'
+      currentPeriod: 'all',
       isKpiPinned: false,
-      isKpiCollapsed: true, // 初期状態で格納
-      isGasConnected: false,
-
-      // 月別の実在庫CSV確定データ: { "2026-10": { 1: 3547, 2: 46, ... } }
+      isKpiCollapsed: true,
+      annualYear: 2026,
       realStockMapByMonth: {},
-
-      // 商品マスタ定義（H列入数・安全在庫・基準在庫）
       products: [
-        { id: 1,  name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 7200, masterInitStock: 6208, initStock: 6208, safeStock: 500, memo: '主力商品' },
-        { id: 2,  name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 60,   masterInitStock: 50,   initStock: 50,   safeStock: 20,  memo: '' },
-        { id: 3,  name: '博多純氷カチ割り1kg',   spec: '1kg×10',  packQty: 10, target: 1400, masterInitStock: 706,  initStock: 706,  safeStock: 200, memo: '' },
-        { id: 4,  name: 'おいしい氷1kg',         spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 2015, initStock: 2015, safeStock: 300, memo: '' },
-        { id: 5,  name: 'ドンキホーテ極氷1.1kg', spec: '1.1kg×8', packQty: 10, target: 1400, masterInitStock: 2336, initStock: 2336, safeStock: 200, memo: '' },
-        { id: 6,  name: 'ヒロキュー千年氷1kg',   spec: '1kg×10',  packQty: 10, target: 500,  masterInitStock: 200,  initStock: 200,  safeStock: 100, memo: '' },
-        { id: 7,  name: 'CGC1kg',                spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 11,   initStock: 11,   safeStock: 300, memo: '' },
-        { id: 8,  name: 'おいしい氷2kgチャック', spec: '2kg×5',   packQty: 6,  target: 1600, masterInitStock: 1761, initStock: 1761, safeStock: 250, memo: 'チャック付き袋' },
-        { id: 9,  name: 'おいしい氷1.1kg',       spec: '1.1kg×8', packQty: 12, target: 3600, masterInitStock: 5975, initStock: 5975, safeStock: 600, memo: '' },
-        { id: 10, name: 'ゆめイチ1kg',           spec: '1kg×10',  packQty: 12, target: 2400, masterInitStock: 1636, initStock: 1636, safeStock: 400, memo: '' },
-        { id: 11, name: 'ゆめイチ2.1kg',         spec: '2.1kg×4', packQty: 6,  target: 4000, masterInitStock: 5829, initStock: 5829, safeStock: 600, memo: '' },
-        { id: 12, name: 'スティック40mm',        spec: '本',      packQty: 1,  target: 200,  masterInitStock: 69,   initStock: 69,   safeStock: 30,  memo: '' },
-        { id: 13, name: 'スティック60mm',        spec: '本',      packQty: 1,  target: 50,   masterInitStock: 30,   initStock: 30,   safeStock: 10,  memo: '' },
-        { id: 14, name: 'スティック110mm',       spec: '本',      packQty: 1,  target: 50,   masterInitStock: 40,   initStock: 40,   safeStock: 10,  memo: '' }
+        { id: 1,  code: 112, name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 7200, masterInitStock: 6208, initStock: 6208, safeStock: 500 },
+        { id: 2,  code: 116, name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 60,   masterInitStock: 50,   initStock: 50,   safeStock: 20 },
+        { id: 3,  code: 23,  name: '博多純氷カチ割り1kg',   spec: '1kg×10',  packQty: 10, target: 1400, masterInitStock: 706,  initStock: 706,  safeStock: 200 },
+        { id: 4,  code: 31,  name: 'おいしい氷1kg',         spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 2015, initStock: 2015, safeStock: 300 },
+        { id: 5,  code: 163, name: 'ドンキホーテ極氷1.1kg', spec: '1.1kg×8', packQty: 10, target: 1400, masterInitStock: 2336, initStock: 2336, safeStock: 200 },
+        { id: 6,  code: 37,  name: 'ヒロキュー千年氷1kg',   spec: '1kg×10',  packQty: 10, target: 500,  masterInitStock: 200,  initStock: 200,  safeStock: 100 },
+        { id: 7,  code: 161, name: 'CGC1kg',                spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 11,   initStock: 11,   safeStock: 300 },
+        { id: 8,  code: 52,  name: 'おいしい氷2kgチャック', spec: '2kg×5',   packQty: 6,  target: 1600, masterInitStock: 1761, initStock: 1761, safeStock: 250 },
+        { id: 9,  code: 74,  name: 'おいしい氷1.1kg',       spec: '1.1kg×8', packQty: 12, target: 3600, masterInitStock: 5975, initStock: 5975, safeStock: 600 },
+        { id: 10, code: 159, name: 'ゆめイチ1kg',           spec: '1kg×10',  packQty: 12, target: 2400, masterInitStock: 1636, initStock: 1636, safeStock: 400 },
+        { id: 11, code: 160, name: 'ゆめイチ2.1kg',         spec: '2.1kg×4', packQty: 6,  target: 4000, masterInitStock: 5829, initStock: 5829, safeStock: 600 },
+        { id: 12, code: 169, name: 'スティック40mm',        spec: '本',      packQty: 1,  target: 200,  masterInitStock: 69,   initStock: 69,   safeStock: 30 },
+        { id: 13, code: 170, name: 'スティック60mm',        spec: '本',      packQty: 1,  target: 50,   masterInitStock: 30,   initStock: 30,   safeStock: 10 },
+        { id: 14, code: 171, name: 'スティック110mm',       spec: '本',      packQty: 1,  target: 50,   masterInitStock: 40,   initStock: 40,   safeStock: 10 }
       ],
-
-      // 日別データ matrix[productId][day] = { make: 0, out: 0 }
       matrix: {},
-      parsedCsvResult: null,
-      parsedStockCsvResult: null
+      annualMatrix: {}
     };
 
-    // 年月キー（例: "2026-10"）
-    function getYmKey(y, m) {
-      return `${y}-${String(m).padStart(2, '0')}`;
-    }
+    function getYmKey(y, m) { return `${y}-${String(m).padStart(2, '0')}`; }
 
-    // 月初在庫の再計算（CSV確定実在庫があれば優先、なければ前月末残数から仮在庫として算出）
-    function updateInitialStocksForCurrentMonth() {
-      const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
-      const isConfirmed = !!(APP_STATE.realStockMapByMonth[ymKey]);
-
-      if (isConfirmed) {
-        // 当月は実在庫CSVで確定
-        const confMap = APP_STATE.realStockMapByMonth[ymKey];
-        APP_STATE.products.forEach(p => {
-          if (confMap[p.id] !== undefined) {
-            p.initStock = confMap[p.id];
-          }
-        });
-      } else {
-        // 未確定（翌月など）：基準在庫または直前の月の月末残数からの引き継ぎ
-        APP_STATE.products.forEach(p => {
-          let baseStock = p.masterInitStock;
-          p.initStock = baseStock;
-        });
-      }
-
-      // バッジ表示の更新
-      const statusBadge = document.getElementById('stockStatusBadge');
-      if (statusBadge) {
-        if (isConfirmed) {
-          statusBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1';
-          statusBadge.innerHTML = `✅ ${APP_STATE.month}月度は在庫報告書CSVから確定実在庫を反映中`;
-        } else {
-          statusBadge.className = 'text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold border border-amber-300 flex items-center gap-1';
-          statusBadge.innerHTML = `⚠️ 前月末残数を月初仮在庫へ自動引継中（実在庫CSV取込可）`;
-        }
-      }
-    }
-
-    // 日付とマトリクスの初期化
-    function initMatrix() {
-      APP_STATE.daysInMonth = new Date(APP_STATE.year, APP_STATE.month, 0).getDate();
-      APP_STATE.matrix = {};
-      APP_STATE.products.forEach(p => {
-        APP_STATE.matrix[p.id] = {};
-        for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-          APP_STATE.matrix[p.id][d] = { make: 0, out: 0 };
-        }
-      });
-      updateInitialStocksForCurrentMonth();
-    }
-
-    // カレンダーの月曜〜日曜サイクル（週配列）を算出
-    function getMonthWeeks(year, month) {
-      const daysInMonth = new Date(year, month, 0).getDate();
-      const firstDate = new Date(year, month - 1, 1);
-      const dow = firstDate.getDay(); // 0: 日, 1: 月
-      const mondayOffset = (dow === 0) ? -6 : (1 - dow);
-      
-      const weeks = [];
-      let cur = new Date(year, month - 1, 1 + mondayOffset);
-      const lastDate = new Date(year, month - 1, daysInMonth);
-      
-      let wIdx = 1;
-      while (cur <= lastDate) {
-        const days = [];
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + i);
-          days.push({
-            year: d.getFullYear(),
-            month: d.getMonth() + 1,
-            day: d.getDate(),
-            dow: d.getDay(),
-            isCurrentMonth: (d.getFullYear() === year && (d.getMonth() + 1) === month)
-          });
-        }
-        const startD = days[0];
-        const endD = days[6];
-        weeks.push({
-          id: `w${wIdx}`,
-          weekNum: wIdx,
-          label: `第${wIdx}週 (${startD.month}/${startD.day}〜${endD.month}/${endD.day})`,
-          days: days
-        });
-        wIdx++;
-        cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
-      }
-      return weeks;
-    }
-
-    // 表示する日の配列を取得
-    function getDisplayDays() {
-      const year = APP_STATE.year;
-      const month = APP_STATE.month;
-      const daysInMonth = APP_STATE.daysInMonth;
-      const period = APP_STATE.currentPeriod;
-
-      if (period === 'all') {
-        const list = [];
-        for (let d = 1; d <= daysInMonth; d++) {
-          const dt = new Date(year, month - 1, d);
-          list.push({
-            year: year,
-            month: month,
-            day: d,
-            dow: dt.getDay(),
-            isCurrentMonth: true
-          });
-        }
-        return list;
-      }
-
-      const weeks = getMonthWeeks(year, month);
-      const found = weeks.find(w => w.id === period);
-      if (found) return found.days;
-
-      if (weeks.length > 0) {
-        APP_STATE.currentPeriod = 'all';
-        return getDisplayDays();
-      }
-      return [];
-    }
-
-    // 期間切り替えタブの動的生成（月曜〜日曜）
-    function renderPeriodTabs() {
-      const container = document.getElementById('periodTabs');
-      if (!container) return;
-
-      const weeks = getMonthWeeks(APP_STATE.year, APP_STATE.month);
-
-      let html = `
-        <span class="text-slate-500 font-bold text-[11px] mr-1 flex items-center gap-1 shrink-0">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-          表示期間:
-        </span>
-      `;
-
-      weeks.forEach(w => {
-        const active = (APP_STATE.currentPeriod === w.id);
-        const cls = active
-          ? 'bg-blue-600 text-white shadow-sm'
-          : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
-        html += `<button data-period="${w.id}" class="period-btn px-2.5 py-1 rounded font-bold text-[11px] ${cls} transition active:scale-95 shrink-0 whitespace-nowrap">${w.label}</button>`;
-      });
-
-      const allActive = (APP_STATE.currentPeriod === 'all');
-      const allCls = allActive
-        ? 'bg-blue-600 text-white shadow-sm'
-        : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
-      html += `<button data-period="all" class="period-btn px-2.5 py-1 rounded font-bold text-[11px] ${allCls} transition active:scale-95 shrink-0 whitespace-nowrap">全日一覧</button>`;
-
-      container.innerHTML = html;
-
-      container.querySelectorAll('.period-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          APP_STATE.currentPeriod = this.dataset.period;
-          renderPeriodTabs();
-          renderTable();
-        });
-      });
-    }
-
-    // トースト表示
-    function showToast(msg, icon = '✔') {
-      const toast = document.getElementById('toast');
-      document.getElementById('toastMsg').textContent = msg;
-      document.getElementById('toastIcon').textContent = icon;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3000);
-    }
-
-    // 数値の安全なパース
     function cleanNum(val) {
       if (val === undefined || val === null || val === '') return 0;
       const str = String(val).normalize('NFKC').replace(/,/g, '').trim();
@@ -644,7 +454,14 @@
       return isNaN(n) ? 0 : n;
     }
 
-    // 入力アシストポップアップおよび強調表示を非表示にするヘルパー関数
+    function showToast(msg, icon = '✔') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+    }
+
     function hideInputAssistTooltip() {
       const tooltip = document.getElementById('inputAssistTooltip');
       if (tooltip) {
@@ -661,7 +478,168 @@
       });
     }
 
-    // テーブルの再描画
+    // 画面切り替えタブ処理
+    function switchMainTab(targetView) {
+      const tabDaily = document.getElementById('navTabDaily');
+      const tabAnnual = document.getElementById('navTabAnnual');
+      const viewDaily = document.getElementById('viewDailyContainer');
+      const viewAnnual = document.getElementById('viewAnnualContainer');
+      const headerMonth = document.getElementById('headerMonthControls');
+      const headerYear = document.getElementById('headerYearControls');
+      const dailyBtns = document.getElementById('dailyActionButtons');
+      const annualBtns = document.getElementById('annualActionButtons');
+
+      if (targetView === 'daily') {
+        APP_STATE.currentView = 'daily';
+        tabDaily.className = 'px-3 py-1 rounded text-xs font-black transition flex items-center gap-1.5 bg-blue-600 text-white shadow';
+        tabAnnual.className = 'px-3 py-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5';
+        viewDaily.classList.remove('hidden');
+        viewAnnual.classList.add('hidden');
+        headerMonth.classList.remove('hidden');
+        headerYear.classList.add('hidden');
+        dailyBtns.classList.remove('hidden');
+        dailyBtns.classList.add('flex');
+        annualBtns.classList.add('hidden');
+        annualBtns.classList.remove('flex');
+
+        updateInitialStocksForCurrentMonth();
+        renderTable();
+      } else {
+        APP_STATE.currentView = 'annual';
+        tabAnnual.className = 'px-3 py-1 rounded text-xs font-black transition flex items-center gap-1.5 bg-indigo-600 text-white shadow';
+        tabDaily.className = 'px-3 py-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5';
+        viewDaily.classList.add('hidden');
+        viewAnnual.classList.remove('hidden');
+        headerMonth.classList.add('hidden');
+        headerYear.classList.remove('hidden');
+        headerYear.classList.add('flex');
+        dailyBtns.classList.add('hidden');
+        dailyBtns.classList.remove('flex');
+        annualBtns.classList.remove('hidden');
+        annualBtns.classList.add('flex');
+
+        renderAnnualTable();
+      }
+    }
+
+    // 日別マトリクス初期化
+    function initMatrix() {
+      APP_STATE.daysInMonth = new Date(APP_STATE.year, APP_STATE.month, 0).getDate();
+      APP_STATE.matrix = {};
+      APP_STATE.products.forEach(p => {
+        APP_STATE.matrix[p.id] = {};
+        for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+          APP_STATE.matrix[p.id][d] = { make: 0, out: 0 };
+        }
+      });
+      updateInitialStocksForCurrentMonth();
+    }
+
+    function updateInitialStocksForCurrentMonth() {
+      const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
+      const isConfirmed = !!(APP_STATE.realStockMapByMonth[ymKey]);
+
+      if (isConfirmed) {
+        const confMap = APP_STATE.realStockMapByMonth[ymKey];
+        APP_STATE.products.forEach(p => {
+          if (confMap[p.id] !== undefined) p.initStock = confMap[p.id];
+        });
+      } else {
+        APP_STATE.products.forEach(p => { p.initStock = p.masterInitStock; });
+      }
+
+      // 年間計画の該当月製造枠があれば、日別の目標値へ反映
+      const annualY = APP_STATE.year;
+      const annualM = APP_STATE.month;
+      if (APP_STATE.annualMatrix[annualY]) {
+        APP_STATE.products.forEach(p => {
+          const planMake = APP_STATE.annualMatrix[annualY][p.id]?.[annualM]?.make;
+          if (planMake !== undefined && planMake > 0) p.target = planMake;
+        });
+      }
+
+      const statusBadge = document.getElementById('stockStatusBadge');
+      if (statusBadge) {
+        if (isConfirmed) {
+          statusBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1';
+          statusBadge.innerHTML = `✅ ${APP_STATE.month}月度は在庫報告書CSVから確定実在庫を反映中`;
+        } else {
+          statusBadge.className = 'text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold border border-amber-300 flex items-center gap-1';
+          statusBadge.innerHTML = `⚠️ 前月末残数を月初仮在庫へ自動引継中（実在庫CSV取込可）`;
+        }
+      }
+    }
+
+    function getMonthWeeks(year, month) {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const firstDate = new Date(year, month - 1, 1);
+      const dow = firstDate.getDay();
+      const mondayOffset = (dow === 0) ? -6 : (1 - dow);
+      const weeks = [];
+      let cur = new Date(year, month - 1, 1 + mondayOffset);
+      const lastDate = new Date(year, month - 1, daysInMonth);
+      let wIdx = 1;
+      while (cur <= lastDate) {
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + i);
+          days.push({
+            year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
+            dow: d.getDay(), isCurrentMonth: (d.getFullYear() === year && (d.getMonth() + 1) === month)
+          });
+        }
+        weeks.push({
+          id: `w${wIdx}`, weekNum: wIdx,
+          label: `第${wIdx}週 (${days[0].month}/${days[0].day}〜${days[6].month}/${days[6].day})`,
+          days: days
+        });
+        wIdx++;
+        cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 7);
+      }
+      return weeks;
+    }
+
+    function getDisplayDays() {
+      if (APP_STATE.currentPeriod === 'all') {
+        const list = [];
+        for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+          list.push({
+            year: APP_STATE.year, month: APP_STATE.month, day: d,
+            dow: new Date(APP_STATE.year, APP_STATE.month - 1, d).getDay(),
+            isCurrentMonth: true
+          });
+        }
+        return list;
+      }
+      const weeks = getMonthWeeks(APP_STATE.year, APP_STATE.month);
+      const found = weeks.find(w => w.id === APP_STATE.currentPeriod);
+      return found ? found.days : [];
+    }
+
+    function renderPeriodTabs() {
+      const container = document.getElementById('periodTabs');
+      if (!container) return;
+      const weeks = getMonthWeeks(APP_STATE.year, APP_STATE.month);
+      let html = `<span class="text-slate-500 font-bold text-[11px] mr-1 flex items-center gap-1 shrink-0">表示期間:</span>`;
+      weeks.forEach(w => {
+        const active = (APP_STATE.currentPeriod === w.id);
+        const cls = active ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+        html += `<button data-period="${w.id}" class="period-btn px-2.5 py-1 rounded font-bold text-[11px] ${cls} transition active:scale-95 shrink-0 whitespace-nowrap">${w.label}</button>`;
+      });
+      const allActive = (APP_STATE.currentPeriod === 'all');
+      const allCls = allActive ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+      html += `<button data-period="all" class="period-btn px-2.5 py-1 rounded font-bold text-[11px] ${allCls} transition active:scale-95 shrink-0 whitespace-nowrap">全日一覧</button>`;
+      container.innerHTML = html;
+      container.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          APP_STATE.currentPeriod = this.dataset.period;
+          renderPeriodTabs();
+          renderTable();
+        });
+      });
+    }
+
+    // 日別テーブル描画
     function renderTable() {
       hideInputAssistTooltip();
       const days = getDisplayDays();
@@ -676,60 +654,35 @@
         : `<div class="text-[9px] text-amber-400 font-bold leading-tight">仮在庫(引継)</div>`;
 
       const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'];
-
-      // 1. テーブルヘッダーの生成（隙間ゼロ密着固定）
       let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
-        <th rowspan="2" class="sticky-corner-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[140px] min-w-[140px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">品目名</th>
-        <th rowspan="2" class="sticky-corner-2 bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-slate-200 w-[65px] min-w-[65px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">
-          <div>月初在庫</div>
-          ${stockBadgeHtml}
+        <th rowspan="2" class="sticky-corner-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[140px] min-w-[140px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">品目名</th>
+        <th rowspan="2" class="th-date-header bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-slate-200 w-[65px] min-w-[65px] border-r border-b border-slate-600">
+          <div>月初在庫</div>${stockBadgeHtml}
         </th>
-        <th rowspan="2" class="sticky-corner-3 bg-slate-800 text-right px-2 py-1 text-xs font-bold text-blue-300 w-[65px] min-w-[65px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]">累計製造</th>
-        <th rowspan="2" class="sticky-corner-4 bg-slate-800 text-right px-2 py-1 text-xs font-bold text-amber-300 w-[65px] min-w-[65px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">累計出庫</th>`;
+        <th rowspan="2" class="th-date-header bg-slate-800 text-right px-2 py-1 text-xs font-bold text-blue-300 w-[65px] min-w-[65px] border-r border-b border-slate-600">累計製造</th>
+        <th rowspan="2" class="th-date-header bg-slate-800 text-right px-2 py-1 text-xs font-bold text-amber-300 w-[65px] min-w-[65px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">累計出庫</th>`;
 
       days.forEach(dayInfo => {
-        const dow = dayOfWeekStr[dayInfo.dow];
         let dayClass = 'bg-slate-800 text-slate-100';
         if (dayInfo.dow === 0) dayClass = 'bg-rose-900/95 text-rose-100 font-extrabold';
         else if (dayInfo.dow === 6) dayClass = 'bg-blue-900/95 text-blue-100 font-extrabold';
         if (!dayInfo.isCurrentMonth) dayClass = 'bg-slate-700/80 text-slate-400 font-medium';
 
         h1 += `<th colspan="3" class="th-date-header ${dayClass} text-center py-1 px-1 border-r border-b border-slate-600 w-[140px] min-w-[140px]">
-          <span class="text-[11px] tracking-wide">${dayInfo.month}/${dayInfo.day} (${dow})</span>
+          <span class="text-[11px] tracking-wide">${dayInfo.month}/${dayInfo.day} (${dayOfWeekStr[dayInfo.dow]})</span>
         </th>`;
       });
       h1 += `</tr>`;
 
       let h2 = `<tr class="divide-x divide-slate-600 text-[10px] bg-slate-900 text-slate-300 h-[24px]">`;
       days.forEach(dayInfo => {
-        const dow = dayInfo.dow;
-        let subBgM = 'bg-slate-900 text-blue-300';
-        let subBgO = 'bg-slate-900 text-amber-300';
-        let subBgS = 'bg-slate-900 text-slate-200 border-r border-slate-600';
-
-        if (!dayInfo.isCurrentMonth) {
-          subBgM = 'bg-slate-800 text-slate-500';
-          subBgO = 'bg-slate-800 text-slate-500';
-          subBgS = 'bg-slate-800 text-slate-400 border-r border-slate-600';
-        } else if (dow === 0) {
-          subBgM = 'bg-rose-950 text-blue-200';
-          subBgO = 'bg-rose-950 text-amber-200';
-          subBgS = 'bg-rose-950 text-rose-200 border-r border-slate-600';
-        } else if (dow === 6) {
-          subBgM = 'bg-blue-950 text-blue-200';
-          subBgO = 'bg-blue-950 text-amber-200';
-          subBgS = 'bg-blue-950 text-slate-200 border-r border-slate-600';
-        }
-
-        h2 += `<th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] max-w-[44px] border-b border-slate-700 ${subBgM}">製造</th>
-               <th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] max-w-[44px] border-b border-slate-700 ${subBgO}">出庫</th>
-               <th class="th-sub-header text-center py-0.5 font-bold w-[52px] min-w-[52px] max-w-[52px] border-b border-slate-700 ${subBgS}">残数</th>`;
+        h2 += `<th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] bg-slate-900 text-blue-300 border-b border-slate-700">製造</th>
+               <th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] bg-slate-900 text-amber-300 border-b border-slate-700">出庫</th>
+               <th class="th-sub-header text-center py-0.5 font-bold w-[52px] min-w-[52px] bg-slate-900 text-slate-200 border-r border-slate-600 border-b border-slate-700">残数</th>`;
       });
       h2 += `</tr>`;
-
       thead.innerHTML = h1 + h2;
 
-      // 2. テーブルボディの生成
       let bHtml = '';
       let monthlyTotalMake = 0;
       let monthlyTotalOut = 0;
@@ -737,9 +690,7 @@
       let totalShortAlerts = 0;
 
       const dayTotals = {};
-      for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-        dayTotals[d] = { make: 0, out: 0 };
-      }
+      for (let d = 1; d <= APP_STATE.daysInMonth; d++) dayTotals[d] = { make: 0, out: 0 };
 
       APP_STATE.products.forEach((p, rowIdx) => {
         monthlyTotalTarget += (p.target || 0);
@@ -752,12 +703,10 @@
         const rowBgClass = isEven ? 'bg-slate-50/90' : 'bg-white';
         const fixedColBg = isEven ? 'bg-slate-100' : 'bg-slate-50';
 
-        // 日別在庫推移マップの事前計算
         const dailyStockMap = {};
         for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
           const makeVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
           const outVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
-
           pMakeSum += makeVal;
           pOutSum += outVal;
           dayTotals[d].make += makeVal;
@@ -765,10 +714,7 @@
 
           curStock = curStock + makeVal - outVal;
           dailyStockMap[d] = curStock;
-
-          if (curStock < p.safeStock) {
-            rowHasShort = true;
-          }
+          if (curStock < p.safeStock) rowHasShort = true;
         }
 
         if (rowHasShort) totalShortAlerts++;
@@ -777,22 +723,11 @@
 
         let dayCells = '';
         days.forEach(dayInfo => {
-          const dow = dayInfo.dow;
-          let colDayBg = '';
-          if (dow === 0) colDayBg = 'bg-rose-50/40';
-          else if (dow === 6) colDayBg = 'bg-blue-50/40';
-
           if (!dayInfo.isCurrentMonth) {
-            const outOfMonthStock = (dayInfo.month < APP_STATE.month || (APP_STATE.month === 1 && dayInfo.month === 12))
-              ? (p.initStock || 0)
-              : (dailyStockMap[APP_STATE.daysInMonth] || p.initStock || 0);
-
             dayCells += `
-              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
-              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
-              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] max-w-[52px] border-r border-slate-300 bg-slate-50 text-slate-400 font-medium select-none">
-                ${outOfMonthStock.toLocaleString()}
-              </td>`;
+              <td class="p-0 text-center w-[44px] min-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
+              <td class="p-0 text-center w-[44px] min-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
+              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] border-r border-slate-300 bg-slate-50 text-slate-400 font-medium select-none">-</td>`;
           } else {
             const d = dayInfo.day;
             const makeVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
@@ -807,74 +742,57 @@
             }
 
             dayCells += `
-              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] ${colDayBg || 'bg-blue-50/25'}">
-                <input type="number" min="0" step="1" 
-                  value="${makeVal > 0 ? makeVal : ''}" 
-                  placeholder="-"
-                  title="${p.name} (${APP_STATE.month}/${d} 製造)"
+              <td class="p-0 text-center w-[44px] min-w-[44px] bg-blue-50/25">
+                <input type="number" min="0" step="1" value="${makeVal > 0 ? makeVal : ''}" placeholder="-"
                   data-pid="${p.id}" data-day="${d}" data-type="make"
                   class="make-input w-full h-7 text-center font-bold text-blue-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 text-xs px-0.5 transition">
               </td>
-              <td class="p-0 text-center w-[44px] min-w-[44px] max-w-[44px] ${colDayBg || 'bg-amber-50/25'}">
-                <input type="number" min="0" step="1" 
-                  value="${outVal > 0 ? outVal : ''}" 
-                  placeholder="-"
-                  title="${p.name} (${APP_STATE.month}/${d} 出庫)"
+              <td class="p-0 text-center w-[44px] min-w-[44px] bg-amber-50/25">
+                <input type="number" min="0" step="1" value="${outVal > 0 ? outVal : ''}" placeholder="-"
                   data-pid="${p.id}" data-day="${d}" data-type="out"
                   class="out-input w-full h-7 text-center font-bold text-amber-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-amber-600 text-xs px-0.5 transition">
               </td>
-              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] max-w-[52px] border-r border-slate-300 ${colDayBg}">
+              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] border-r border-slate-300">
                 <span class="${stockStyle} block text-right">${stockVal.toLocaleString()}</span>
               </td>`;
           }
         });
 
         bHtml += `<tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-blue-50/60 transition" id="row-p-${p.id}">
-          <td class="sticky-col-1 ${fixedColBg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
+          <td class="sticky-col-1 ${fixedColBg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]">
             <div class="truncate max-w-[130px] font-bold" title="${p.name}">${p.name}</div>
             <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''} <span class="text-slate-600 font-medium">入:${p.packQty || 1}</span></div>
           </td>
-          <td class="sticky-col-2 ${fixedColBg} px-2 py-1.5 text-right font-black text-slate-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
-            ${(p.initStock || 0).toLocaleString()}
-          </td>
-          <td class="sticky-col-3 ${fixedColBg} px-2 py-1.5 text-right font-black text-blue-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)]">
-            ${pMakeSum.toLocaleString()}
-          </td>
-          <td class="sticky-col-4 ${fixedColBg} px-2 py-1.5 text-right font-black text-amber-700 text-xs border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]">
-            ${pOutSum.toLocaleString()}
-          </td>
+          <td class="px-2 py-1.5 text-right font-black text-slate-700 text-xs border-r border-slate-300 bg-slate-50">${(p.initStock || 0).toLocaleString()}</td>
+          <td class="px-2 py-1.5 text-right font-black text-blue-700 text-xs border-r border-slate-300 bg-blue-50/20">${pMakeSum.toLocaleString()}</td>
+          <td class="px-2 py-1.5 text-right font-black text-amber-700 text-xs border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] bg-amber-50/20">${pOutSum.toLocaleString()}</td>
           ${dayCells}
         </tr>`;
       });
-
       tbody.innerHTML = bHtml;
 
-      // 3. テーブルフッター（日別合計行）
       let fHtml = `<tr class="divide-x divide-slate-400 text-xs text-slate-900 bg-slate-200">
-        <td class="sticky-col-1 bg-slate-300 px-2 py-2 font-black text-slate-900 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)]">日別合計</td>
-        <td class="sticky-col-2 bg-slate-300 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)]"></td>
-        <td class="sticky-col-3 bg-slate-300 text-right px-2 py-2 text-blue-800 font-black border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)]">${monthlyTotalMake.toLocaleString()}</td>
-        <td class="sticky-col-4 bg-slate-300 text-right px-2 py-2 text-amber-800 font-black border-r-2 border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">${monthlyTotalOut.toLocaleString()}</td>`;
+        <td class="sticky-col-1 bg-slate-300 px-2 py-2 font-black text-slate-900 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]">日別合計</td>
+        <td class="bg-slate-300 border-r border-slate-400"></td>
+        <td class="bg-slate-300 text-right px-2 py-2 text-blue-800 font-black border-r border-slate-400">${monthlyTotalMake.toLocaleString()}</td>
+        <td class="bg-slate-300 text-right px-2 py-2 text-amber-800 font-black border-r-2 border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">${monthlyTotalOut.toLocaleString()}</td>`;
 
       days.forEach(dayInfo => {
         if (!dayInfo.isCurrentMonth) {
-          fHtml += `
-            <td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
-            <td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
-            <td class="border-r border-slate-400 bg-slate-200"></td>`;
+          fHtml += `<td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
+                    <td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
+                    <td class="border-r border-slate-400 bg-slate-200"></td>`;
         } else {
           const mSum = dayTotals[dayInfo.day].make;
           const oSum = dayTotals[dayInfo.day].out;
-          fHtml += `
-            <td class="text-center py-2 font-black text-blue-800 bg-blue-100/60">${mSum > 0 ? mSum.toLocaleString() : '-'}</td>
-            <td class="text-center py-2 font-black text-amber-800 bg-amber-100/60">${oSum > 0 ? oSum.toLocaleString() : '-'}</td>
-            <td class="border-r border-slate-400 bg-slate-200"></td>`;
+          fHtml += `<td class="text-center py-2 font-black text-blue-800 bg-blue-100/60">${mSum > 0 ? mSum.toLocaleString() : '-'}</td>
+                    <td class="text-center py-2 font-black text-amber-800 bg-amber-100/60">${oSum > 0 ? oSum.toLocaleString() : '-'}</td>
+                    <td class="border-r border-slate-400 bg-slate-200"></td>`;
         }
       });
       fHtml += `</tr>`;
       tfoot.innerHTML = fHtml;
 
-      // 4. KPIカード＆サマリーバーの更新
       document.getElementById('kpiTotalMake').innerHTML = `${monthlyTotalMake.toLocaleString()} <span class="text-xs font-normal text-slate-500">c/s</span>`;
       document.getElementById('compactMake').textContent = monthlyTotalMake.toLocaleString();
 
@@ -898,7 +816,6 @@
         alertIcon.textContent = '⚠';
         compactShort.textContent = totalShortAlerts;
         compactShort.className = 'text-rose-600 text-sm font-black';
-
         banner.classList.remove('hidden');
         document.getElementById('alertBannerTitle').textContent = `${totalShortAlerts}品目で在庫ショート（欠品・安全在庫割れ）を検知しました`;
       } else {
@@ -914,36 +831,10 @@
       attachInputEvents();
     }
 
-    // セル入力時のイベント紐付け（フローティング吹き出し）
     function attachInputEvents() {
       const tooltip = document.getElementById('inputAssistTooltip');
       const activeBadge = document.getElementById('activeEditingBadge');
       const activeText = document.getElementById('activeEditingText');
-      const tableContainer = document.getElementById('mainTable')?.parentElement;
-
-      const updateTooltipPos = (input) => {
-        if (!tooltip || !input) return;
-        const rect = input.getBoundingClientRect();
-        if (rect.top < 110) {
-          tooltip.style.left = `${rect.left + rect.width / 2}px`;
-          tooltip.style.top = `${rect.bottom + 6}px`;
-          tooltip.classList.remove('-translate-y-full');
-        } else {
-          tooltip.style.left = `${rect.left + rect.width / 2}px`;
-          tooltip.style.top = `${rect.top - 6}px`;
-          tooltip.classList.add('-translate-y-full');
-        }
-      };
-
-      if (tableContainer && !tableContainer._hasScrollListen) {
-        tableContainer.addEventListener('scroll', () => {
-          const activeInput = document.activeElement;
-          if (activeInput && (activeInput.classList.contains('make-input') || activeInput.classList.contains('out-input'))) {
-            updateTooltipPos(activeInput);
-          }
-        });
-        tableContainer._hasScrollListen = true;
-      }
 
       document.querySelectorAll('.make-input, .out-input').forEach(input => {
         input.addEventListener('focus', function() {
@@ -956,19 +847,17 @@
           const dateObj = new Date(APP_STATE.year, APP_STATE.month - 1, day);
           const dow = ['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()];
           const isMake = (type === 'make');
-
           const borderClass = isMake ? 'border-blue-500 shadow-blue-900/40' : 'border-amber-500 shadow-amber-900/40';
           const typeBadge = isMake
             ? '<span class="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">製造</span>'
             : '<span class="bg-amber-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">出庫</span>';
 
           tooltip.className = `fixed pointer-events-none z-50 opacity-100 transform -translate-x-1/2 transition-all duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap bg-slate-900 text-white border-2 ${borderClass}`;
-          tooltip.innerHTML = `
-            ${typeBadge}
-            <span class="text-white font-extrabold tracking-wide text-xs">${p.name}</span>
-            <span class="text-slate-400 font-normal text-[11px]">${APP_STATE.month}/${day}(${dow})</span>
-          `;
-          updateTooltipPos(this);
+          tooltip.innerHTML = `${typeBadge}<span class="text-white font-extrabold tracking-wide text-xs">${p.name}</span><span class="text-slate-400 font-normal text-[11px]">${APP_STATE.month}/${day}(${dow})</span>`;
+
+          const rect = this.getBoundingClientRect();
+          tooltip.style.left = `${rect.left + rect.width / 2}px`;
+          tooltip.style.top = `${rect.top - 6}px`;
 
           const row = document.getElementById(`row-p-${pId}`);
           if (row) {
@@ -983,492 +872,29 @@
           }
         });
 
-        input.addEventListener('blur', function() {
-          hideInputAssistTooltip();
-        });
+        input.addEventListener('blur', function() { hideInputAssistTooltip(); });
 
         input.addEventListener('change', function() {
           const pId = parseInt(this.dataset.pid, 10);
           const day = parseInt(this.dataset.day, 10);
           const type = this.dataset.type;
           const val = Math.max(0, parseInt(this.value, 10) || 0);
-
           if (APP_STATE.matrix[pId] && APP_STATE.matrix[pId][day]) {
             APP_STATE.matrix[pId][day][type] = val;
           }
           renderTable();
         });
-
-        input.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            const pId = parseInt(this.dataset.pid, 10);
-            const day = this.dataset.day;
-            const type = this.dataset.type;
-            const nextInput = document.querySelector(`input[data-pid="${pId + 1}"][data-day="${day}"][data-type="${type}"]`);
-            if (nextInput) nextInput.focus();
-          }
-        });
       });
     }
 
-    // ==========================================
-    // 7. 実在庫CSV（在庫報告書）の解析＆取込処理
-    // ==========================================
-    const STOCK_CODE_MAP = {
-      112: 1, // おいしい氷3kg
-      116: 2, 162: 2, // おいしい氷アイスカップ
-      23: 3,  // 博多純氷カチ割り1kg
-      31: 4,  // おいしい氷1kg
-      33: 5, 163: 5, // ドンキホーテ極氷1.1kg
-      37: 6, 164: 6, // ヒロキュー千年氷1kg
-      136: 7, 161: 7, // CGC1kg
-      52: 8,  // おいしい氷2kgチャック
-      74: 9,  // おいしい氷1.1kg
-      159: 10, // ゆめイチ1kg (氷屋さんが作った氷1kg)
-      160: 11, // ゆめイチ2.1kg (氷屋さんが作った氷2.1kg)
-      169: 12, // スティック40mm
-      170: 13, // スティック60mm
-      171: 14  // スティック110mm
-    };
-
-    function parseStockCsvContent(text) {
-      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-      if (lines.length < 2) return null;
-
-      const rows = lines.map(line => {
-        const result = [];
-        let cur = '';
-        let inQuote = false;
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === '"') inQuote = !inQuote;
-          else if (ch === ',' && !inQuote) {
-            result.push(cur.trim());
-            cur = '';
-          } else {
-            cur += ch;
-          }
-        }
-        result.push(cur.trim());
-        return result;
-      });
-
-      const header = rows[0].map(h => String(h).normalize('NFKC').trim());
-      
-      let colCode = -1;
-      let colName = -1;
-      let colCase = -1;
-
-      header.forEach((col, idx) => {
-        if (/商品コード|ｺｰﾄﾞ|コード/i.test(col)) colCode = idx;
-        if (/商品名規格|商品名|品名|名称/i.test(col)) colName = idx;
-        if (/^ケース$/i.test(col) || /ケース数/i.test(col)) colCase = idx;
-      });
-
-      if (colCode === -1) colCode = 10;
-      if (colName === -1) colName = 11;
-      if (colCase === -1) colCase = 21;
-
-      // 品目別の合算マップ
-      const totalCasesByProduct = {};
-      APP_STATE.products.forEach(p => {
-        totalCasesByProduct[p.id] = 0;
-      });
-
-      let hitRowCount = 0;
-
-      for (let r = 1; r < rows.length; r++) {
-        const row = rows[r];
-        if (!row || row.length < 5) continue;
-
-        const rowCode = cleanNum(row[colCode]);
-        const rowName = String(row[colName] || '').normalize('NFKC').trim();
-        const caseVal = cleanNum(row[colCase]);
-
-        let matchedP = null;
-        if (STOCK_CODE_MAP[rowCode]) {
-          matchedP = APP_STATE.products.find(p => p.id === STOCK_CODE_MAP[rowCode]);
-        }
-        if (!matchedP && rowName) {
-          matchedP = APP_STATE.products.find(p => {
-            const cleanPName = p.name.normalize('NFKC').replace(/\s+/g, '');
-            const cleanRName = rowName.replace(/\s+/g, '');
-            return cleanRName.includes(cleanPName) || cleanPName.includes(cleanRName);
-          });
-        }
-
-        if (matchedP && caseVal > 0) {
-          totalCasesByProduct[matchedP.id] += caseVal;
-          hitRowCount++;
-        }
-      }
-
-      const resultList = [];
-      APP_STATE.products.forEach(p => {
-        resultList.push({
-          productId: p.id,
-          productName: p.name,
-          totalCases: totalCasesByProduct[p.id] || 0
-        });
-      });
-
-      return { list: resultList, hitCount: hitRowCount };
-    }
-
-    function setupStockCsvModal() {
-      const modal = document.getElementById('stockCsvModal');
-      const fileInput = document.getElementById('stockCsvFileInput');
-      const btnApply = document.getElementById('btnApplyStockCsvData');
-      const previewArea = document.getElementById('stockCsvPreviewArea');
-      const previewList = document.getElementById('stockCsvPreviewList');
-      const matchCount = document.getElementById('stockCsvMatchCount');
-
-      document.getElementById('btnOpenStockCsvModal').addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        fileInput.value = '';
-        btnApply.disabled = true;
-        previewArea.classList.add('hidden');
-        APP_STATE.parsedStockCsvResult = null;
-      });
-
-      const closeModal = () => modal.classList.add('hidden');
-      document.getElementById('btnCloseStockCsvModal').addEventListener('click', closeModal);
-      document.getElementById('btnCancelStockCsvModal').addEventListener('click', closeModal);
-
-      fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const buffer = evt.target.result;
-          let text = '';
-          try {
-            const decoder = new TextDecoder('shift-jis');
-            text = decoder.decode(buffer);
-            if (text.includes('')) throw new Error('Shift-JIS miss');
-          } catch (err) {
-            const decoder = new TextDecoder('utf-8');
-            text = decoder.decode(buffer);
-          }
-
-          const parsed = parseStockCsvContent(text);
-          if (parsed && parsed.hitCount > 0) {
-            APP_STATE.parsedStockCsvResult = parsed.list;
-            btnApply.disabled = false;
-            previewArea.classList.remove('hidden');
-            matchCount.textContent = `${parsed.hitCount}件の明細を集計成功`;
-
-            previewList.innerHTML = parsed.list.map(item => `
-              <div class="flex items-center justify-between py-1 border-b border-slate-100">
-                <span class="font-bold text-slate-800">${item.productName}</span>
-                <span class="font-extrabold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
-                  合算実在庫: ${item.totalCases.toLocaleString()} c/s
-                </span>
-              </div>
-            `).join('');
-          } else {
-            btnApply.disabled = true;
-            previewArea.classList.remove('hidden');
-            matchCount.textContent = '照合失敗';
-            previewList.innerHTML = `<div class="text-rose-600 font-bold p-2">在庫報告書の品目またはケース列が認識できませんでした。</div>`;
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      });
-
-      btnApply.addEventListener('click', function() {
-        if (!APP_STATE.parsedStockCsvResult) return;
-
-        const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
-        if (!APP_STATE.realStockMapByMonth[ymKey]) {
-          APP_STATE.realStockMapByMonth[ymKey] = {};
-        }
-
-        const stockRecords = [];
-        APP_STATE.parsedStockCsvResult.forEach(item => {
-          APP_STATE.realStockMapByMonth[ymKey][item.productId] = item.totalCases;
-          const p = APP_STATE.products.find(prod => prod.id === item.productId);
-          if (p) {
-            p.initStock = item.totalCases;
-          }
-          stockRecords.push({
-            productId: item.productId,
-            productName: item.productName,
-            stock: item.totalCases
-          });
-        });
-
-        renderTable();
-        closeModal();
-
-        // スプレッドシート（月別月初実在庫シート）へ即座に自動保存
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          showToast('実在庫データをスプレッドシートへ保存中...', '⏳');
-          google.script.run
-            .withSuccessHandler(function(res) {
-              if (res && res.success) {
-                showToast(`${APP_STATE.year}年${APP_STATE.month}月度の月初実在庫(${res.count}品目)をシートへ保存しました！`);
-              } else {
-                showToast('保存に失敗しました: ' + (res ? res.message : 'エラー'), '⚠');
-              }
-            })
-            .withFailureHandler(function(err) {
-              showToast('スプレッドシート通信エラー: ' + err, '⚠');
-            })
-            .apiSaveMonthlyStock(stockRecords, APP_STATE.year, APP_STATE.month);
-        } else {
-          showToast(`${APP_STATE.year}年${APP_STATE.month}月度の月初実在庫を確定反映しました（プレビュー）`);
-        }
-      });
-    }
-
-    // ==========================================
-    // 8. 出庫CSV（ケース数直接反映・自動上書き）
-    // ==========================================
-    function parseCsvContent(text) {
-      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-      if (lines.length < 2) return null;
-
-      const rows = lines.map(line => {
-        const result = [];
-        let cur = '';
-        let inQuote = false;
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === '"') inQuote = !inQuote;
-          else if (ch === ',' && !inQuote) {
-            result.push(cur.trim());
-            cur = '';
-          } else {
-            cur += ch;
-          }
-        }
-        result.push(cur.trim());
-        return result;
-      });
-
-      const header = rows[0].map(h => String(h).normalize('NFKC').trim());
-      
-      let colCode = -1;
-      let colName = -1;
-      const dayColMap = {};
-
-      header.forEach((col, idx) => {
-        if (/商品コード|ｺｰﾄﾞ|コード/i.test(col)) colCode = idx;
-        if (/商品名|品名|名称/i.test(col)) colName = idx;
-
-        const m = col.match(/ケース(?:数)?\s*(\d{1,2})/i);
-        if (m) {
-          const d = parseInt(m[1], 10);
-          if (d >= 1 && d <= 31) {
-            dayColMap[d] = idx;
-          }
-        }
-      });
-
-      if (Object.keys(dayColMap).length === 0) {
-        let detectedDay = 1;
-        for (let c = 7; c < header.length && detectedDay <= 31; c += 2) {
-          dayColMap[detectedDay] = c;
-          detectedDay++;
-        }
-      }
-
-      const matchedData = [];
-      const codeLookup = {
-        112: 1, 116: 2, 162: 2, 23: 3, 31: 4, 33: 5, 163: 5,
-        164: 6, 37: 6, 136: 7, 161: 7, 169: 12, 170: 13, 171: 14
-      };
-
-      for (let r = 1; r < rows.length; r++) {
-        const row = rows[r];
-        if (!row || row.length < 3) continue;
-
-        const rowCode = cleanNum(row[colCode !== -1 ? colCode : 2]);
-        const rowName = (colName !== -1 ? row[colName] : (row[3] || '')).normalize('NFKC').trim();
-
-        let matchedP = null;
-        if (codeLookup[rowCode]) {
-          matchedP = APP_STATE.products.find(p => p.id === codeLookup[rowCode]);
-        }
-        if (!matchedP && rowName) {
-          matchedP = APP_STATE.products.find(p => {
-            const cleanPName = p.name.normalize('NFKC').replace(/\s+/g, '');
-            const cleanRName = rowName.replace(/\s+/g, '');
-            return cleanRName.includes(cleanPName) || cleanPName.includes(cleanRName);
-          });
-        }
-
-        if (matchedP) {
-          const dailyCases = {};
-          let totalCases = 0;
-
-          Object.keys(dayColMap).forEach(dStr => {
-            const dayNum = parseInt(dStr, 10);
-            const colIdx = dayColMap[dayNum];
-            const caseVal = cleanNum(row[colIdx]);
-
-            dailyCases[dayNum] = caseVal;
-            totalCases += caseVal;
-          });
-
-          matchedData.push({
-            productId: matchedP.id,
-            productName: matchedP.name,
-            csvName: rowName || `コード:${rowCode}`,
-            dailyCases: dailyCases,
-            totalCases: totalCases
-          });
-        }
-      }
-
-      return matchedData;
-    }
-
-    function setupCsvModal() {
-      const modal = document.getElementById('csvModal');
-      const fileInput = document.getElementById('csvFileInput');
-      const btnApply = document.getElementById('btnApplyCsvData');
-      const previewArea = document.getElementById('csvPreviewArea');
-      const previewList = document.getElementById('csvPreviewList');
-      const matchCount = document.getElementById('csvMatchCount');
-
-      document.getElementById('btnOpenCsvModal').addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        fileInput.value = '';
-        btnApply.disabled = true;
-        previewArea.classList.add('hidden');
-        APP_STATE.parsedCsvResult = null;
-      });
-
-      const closeModal = () => modal.classList.add('hidden');
-      document.getElementById('btnCloseCsvModal').addEventListener('click', closeModal);
-      document.getElementById('btnCancelCsvModal').addEventListener('click', closeModal);
-
-      fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const buffer = evt.target.result;
-          let text = '';
-          try {
-            const decoder = new TextDecoder('shift-jis');
-            text = decoder.decode(buffer);
-            if (text.includes('')) throw new Error('Shift-JIS miss');
-          } catch (err) {
-            const decoder = new TextDecoder('utf-8');
-            text = decoder.decode(buffer);
-          }
-
-          const parsed = parseCsvContent(text);
-          if (parsed && parsed.length > 0) {
-            APP_STATE.parsedCsvResult = parsed;
-            btnApply.disabled = false;
-            previewArea.classList.remove('hidden');
-            matchCount.textContent = `${parsed.length}品目 照合成功`;
-
-            previewList.innerHTML = parsed.map(item => `
-              <div class="flex items-center justify-between py-1 border-b border-slate-100">
-                <div>
-                  <span class="font-bold text-slate-800">${item.productName}</span>
-                  <span class="text-[10px] text-slate-400 ml-1">(${item.csvName})</span>
-                </div>
-                <span class="font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                  出庫計: ${item.totalCases.toLocaleString()} c/s
-                </span>
-              </div>
-            `).join('');
-          } else {
-            btnApply.disabled = true;
-            previewArea.classList.remove('hidden');
-            matchCount.textContent = '照合失敗';
-            previewList.innerHTML = `<div class="text-rose-600 font-bold p-2">該当する品目または日付列が見つかりませんでした。列名をご確認ください。</div>`;
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      });
-
-      btnApply.addEventListener('click', function() {
-        if (!APP_STATE.parsedCsvResult) return;
-
-        // 最新データで上書きするため、当月の出庫を自動クリア
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            if (APP_STATE.matrix[p.id] && APP_STATE.matrix[p.id][d]) {
-              APP_STATE.matrix[p.id][d].out = 0;
-            }
-          }
-        });
-
-        APP_STATE.parsedCsvResult.forEach(item => {
-          const pId = item.productId;
-          Object.keys(item.dailyCases).forEach(dStr => {
-            const dayNum = parseInt(dStr, 10);
-            if (APP_STATE.matrix[pId] && APP_STATE.matrix[pId][dayNum]) {
-              APP_STATE.matrix[pId][dayNum].out = item.dailyCases[dayNum];
-            }
-          });
-        });
-
-        // スプレッドシート保存用の出庫レコードを作成
-        const outRecords = [];
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
-            if (oVal > 0) {
-              outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
-            }
-          }
-        });
-
-        APP_STATE.currentPeriod = 'all';
-        renderPeriodTabs();
-        renderTable();
-        closeModal();
-
-        // スプレッドシート（出庫実績トランザクション）へ即座に自動保存
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          showToast('出庫データをスプレッドシートへ保存中...', '⏳');
-          google.script.run
-            .withSuccessHandler(function(res) {
-              if (res && res.success) {
-                showToast(`出庫データ(${res.count}件)をスプレッドシートへ自動保存しました！`);
-              } else {
-                showToast('保存に失敗しました: ' + (res ? res.message : 'エラー'), '⚠');
-              }
-            })
-            .withFailureHandler(function(err) {
-              showToast('スプレッドシート通信エラー: ' + err, '⚠');
-            })
-            .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
-        } else {
-          showToast(`${APP_STATE.parsedCsvResult.length}品目の出庫データを画面に反映しました（プレビュー）`);
-        }
-      });
-    }
-
-    // ==========================================
-    // 9. A4横1枚 週間製造予定表 印刷処理
-    // ==========================================
+    // A4横1枚印刷処理
     function runSafeA4Print() {
       try {
         const table = document.getElementById('mainTable');
-        if (!table) {
-          window.print();
-          return;
-        }
-
+        if (!table) { window.print(); return; }
         const trs = Array.from(table.querySelectorAll('tr'));
-        if (trs.length < 2) {
-          window.print();
-          return;
-        }
+        if (trs.length < 2) { window.print(); return; }
 
-        // 日付ヘッダーの抽出
         const ths = Array.from(trs[0].querySelectorAll('th, td'));
         const dayHeaders = [];
         for (let i = 4; i < ths.length; i++) {
@@ -1485,10 +911,8 @@
         trs.forEach(tr => {
           const cells = Array.from(tr.querySelectorAll('td, th'));
           if (cells.length < 5) return;
-
           const col0Text = cells[0].innerText.trim();
 
-          // 合計行
           if (col0Text.includes('日別合計') || col0Text.includes('合計')) {
             let dayTotalsHtml = '';
             for (let d = 0; d < dayHeaders.length; d++) {
@@ -1500,16 +924,13 @@
               <tr style="height:25px; background-color:#e2e8f0;">
                 <td style="border:1px solid #333; padding:2px 8px; text-align:center; font-size:11px; font-weight:bold;">日別合計 製造数 (cs)</td>
                 ${dayTotalsHtml}
-              </tr>
-            `;
+              </tr>`;
             return;
           }
 
-          // 通常品目行（品目名のみ・規格・週製造計は削除）
           if (col0Text && !col0Text.includes('品目名') && !col0Text.includes('製造') && !col0Text.includes('月初')) {
             const boldEl = cells[0].querySelector('.font-bold');
             const prodName = boldEl ? boldEl.innerText.trim() : cells[0].innerText.trim().split('\n')[0].trim();
-
             let dayCellsHtml = '';
             for (let d = 0; d < dayHeaders.length; d++) {
               const c = cells[4 + d * 3];
@@ -1523,19 +944,16 @@
               const fontStyle = isNum ? 'font-weight:bold; color:#000;' : 'color:#94a3b8;';
               dayCellsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; ${fontStyle}">${val}</td>`;
             }
-
             rowsHtml += `
               <tr style="height:22px;">
                 <td style="border:1px solid #333; padding:2px 8px; text-align:left; font-size:11px; font-weight:bold; white-space:nowrap; overflow:hidden;">${prodName}</td>
                 ${dayCellsHtml}
-              </tr>
-            `;
+              </tr>`;
           }
         });
 
         const now = new Date();
         const printDateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        
         let activeWeekText = '週間製造予定表';
         const activeBtn = Array.from(document.querySelectorAll('#periodTabs button')).find(b => b.classList.contains('bg-blue-600'));
         if (activeBtn && activeBtn.textContent.includes('第')) {
@@ -1554,7 +972,6 @@
           pWrap.id = 'print-clean-wrapper';
           document.body.appendChild(pWrap);
         }
-
         pWrap.innerHTML = `
           <div style="margin-bottom:6px; border-bottom:2px solid #222; padding-bottom:3px;">
             <h1 style="font-size:17px; font-weight:bold; color:#0f172a; margin:0;">${activeWeekText}</h1>
@@ -1567,55 +984,416 @@
                 ${theadDaysHtml}
               </tr>
             </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-            <tfoot>
-              ${totalRowHtml}
-            </tfoot>
-          </table>
-        `;
+            <tbody>${rowsHtml}</tbody>
+            <tfoot>${totalRowHtml}</tfoot>
+          </table>`;
 
-        setTimeout(() => {
-          window.print();
-        }, 50);
-
+        setTimeout(() => window.print(), 50);
       } catch (err) {
         console.error('Print Error:', err);
         window.print();
       }
     }
 
-    // スプレッドシート（GAS）からのデータ読み込み
+    // ==========================================
+    // 5. 年間計画シミュレーション テーブル描画
+    // ==========================================
+    function initAnnualMatrix(targetYear) {
+      if (!APP_STATE.annualMatrix[targetYear]) {
+        APP_STATE.annualMatrix[targetYear] = {};
+        APP_STATE.products.forEach(p => {
+          APP_STATE.annualMatrix[targetYear][p.id] = {};
+          for (let m = 1; m <= 12; m++) {
+            APP_STATE.annualMatrix[targetYear][p.id][m] = { sales: 0, make: 0 };
+          }
+        });
+      }
+    }
+
+    function renderAnnualTable() {
+      const thead = document.getElementById('annualTableHead');
+      const tbody = document.getElementById('annualTableBody');
+      const tfoot = document.getElementById('annualTableFoot');
+      const year = APP_STATE.annualYear;
+
+      initAnnualMatrix(year);
+      const data = APP_STATE.annualMatrix[year];
+
+      let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
+        <th rowspan="2" class="annual-sticky-th-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[160px] min-w-[160px] max-w-[160px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">品目名</th>
+        <th rowspan="2" class="annual-th-top bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-amber-200 w-[80px] min-w-[80px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">前月末在庫</th>`;
+
+      for (let m = 1; m <= 12; m++) {
+        h1 += `<th colspan="3" class="annual-th-top bg-slate-800 text-center py-1 px-1 border-r border-b border-slate-600 w-[150px] min-w-[150px]">
+          <span class="text-xs font-black tracking-wider text-slate-100">${m}月度</span>
+        </th>`;
+      }
+      h1 += `<th colspan="2" class="annual-th-top bg-indigo-950 text-center py-1 px-1 border-b border-slate-600 w-[130px] min-w-[130px]">
+        <span class="text-xs font-black tracking-wider text-indigo-200">年間合計</span>
+      </th></tr>`;
+
+      let h2 = `<tr class="divide-x divide-slate-600 text-[10px] bg-slate-900 text-slate-300 h-[24px]">`;
+      for (let m = 1; m <= 12; m++) {
+        h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[48px] bg-blue-950 text-blue-200 border-b border-slate-700">販売</th>
+               <th class="annual-th-sub text-center py-0.5 font-bold w-[50px] bg-indigo-950 text-indigo-200 border-b border-slate-700">製造</th>
+               <th class="annual-th-sub text-center py-0.5 font-bold w-[52px] bg-amber-950 text-amber-200 border-r border-slate-600 border-b border-slate-700">在庫</th>`;
+      }
+      h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[65px] bg-slate-900 text-blue-200 border-b border-slate-700">販売計</th>
+             <th class="annual-th-sub text-center py-0.5 font-bold w-[65px] bg-slate-900 text-indigo-200 border-b border-slate-700">製造計</th></tr>`;
+      thead.innerHTML = h1 + h2;
+
+      let bHtml = '';
+      const monthlyTotalSales = new Array(13).fill(0);
+      const monthlyTotalMake = new Array(13).fill(0);
+      let grandInitStock = 0;
+
+      APP_STATE.products.forEach((p, rowIdx) => {
+        const isEven = (rowIdx % 2 === 1);
+        const rowBgClass = isEven ? 'bg-slate-50' : 'bg-white';
+        const fixedCol1Bg = isEven ? 'bg-slate-100' : 'bg-white';
+        const fixedCol2Bg = isEven ? 'bg-amber-100' : 'bg-amber-50';
+
+        let annualProdSalesSum = 0;
+        let annualProdMakeSum = 0;
+        
+        // 前月末在庫（手入力値があればそれを優先、なければマスタ初期在庫）
+        const initStockVal = (p.annualInitStock !== undefined) ? p.annualInitStock : (p.masterInitStock || 0);
+        grandInitStock += initStockVal;
+        let runningStock = initStockVal;
+
+        let monthCells = '';
+        for (let m = 1; m <= 12; m++) {
+          const sVal = data[p.id]?.[m]?.sales || 0;
+          const mVal = data[p.id]?.[m]?.make || 0;
+          annualProdSalesSum += sVal;
+          annualProdMakeSum += mVal;
+          monthlyTotalSales[m] += sVal;
+          monthlyTotalMake[m] += mVal;
+
+          runningStock = runningStock + mVal - sVal;
+          let stockStyle = 'text-slate-800 font-semibold';
+          if (runningStock < 0) {
+            stockStyle = 'bg-rose-600 text-white font-black px-1 rounded shadow-sm';
+          } else if (runningStock < p.safeStock) {
+            stockStyle = 'text-rose-600 font-black bg-rose-50 border border-rose-300 px-1 rounded shadow-sm';
+          }
+
+          monthCells += `
+            <td class="p-0 text-center w-[48px] min-w-[48px] bg-blue-50/20">
+              <input type="number" min="0" step="1" value="${sVal > 0 ? sVal : ''}" placeholder="-"
+                data-apid="${p.id}" data-month="${m}" data-type="sales"
+                class="annual-sales-input w-full h-7 text-center font-bold text-blue-900 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs px-0.5 transition">
+            </td>
+            <td class="p-0 text-center w-[50px] min-w-[50px] bg-indigo-50/30">
+              <input type="number" min="0" step="1" value="${mVal > 0 ? mVal : ''}" placeholder="-"
+                data-apid="${p.id}" data-month="${m}" data-type="make"
+                class="annual-make-input w-full h-7 text-center font-black text-indigo-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-indigo-600 text-xs px-0.5 transition">
+            </td>
+            <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] border-r border-slate-300 bg-amber-50/20">
+              <span class="${stockStyle} block text-right">${runningStock.toLocaleString()}</span>
+            </td>`;
+        }
+
+        bHtml += `
+          <tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-emerald-50/60 transition">
+            <td class="annual-sticky-col-1 ${fixedCol1Bg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[160px] min-w-[160px] max-w-[160px]">
+              <div class="truncate max-w-[150px] font-bold" title="${p.name}">${p.name}</div>
+              <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''} <span class="text-slate-600">入:${p.packQty || 1}</span></div>
+            </td>
+            <td class="bg-amber-50/70 p-0 text-right border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[80px] min-w-[80px]">
+              <input type="number" min="0" step="1" value="${initStockVal > 0 ? initStockVal : ''}" placeholder="0"
+                data-apid="${p.id}" data-type="initStock"
+                class="annual-init-stock-input w-full h-7 text-right font-black text-amber-950 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 text-xs px-1.5 transition">
+            </td>
+            ${monthCells}
+            <td class="text-right px-2 py-1.5 text-xs font-black text-blue-800 bg-slate-50">${annualProdSalesSum.toLocaleString()}</td>
+            <td class="text-right px-2 py-1.5 text-xs font-black text-indigo-800 bg-slate-50">${annualProdMakeSum.toLocaleString()}</td>
+          </tr>`;
+      });
+      tbody.innerHTML = bHtml;
+
+      let fHtml = `<tr class="divide-x divide-slate-400 text-xs text-slate-900 bg-slate-200">
+        <td class="annual-sticky-col-1 bg-slate-300 px-2 py-2 font-black text-slate-900 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[160px] min-w-[160px] max-w-[160px]">月別合計</td>
+        <td class="bg-amber-200 text-right px-2 py-2 font-black text-slate-900 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[80px] min-w-[80px]">${grandInitStock.toLocaleString()}</td>`;
+
+      let grandSales = 0, grandMake = 0;
+      for (let m = 1; m <= 12; m++) {
+        grandSales += monthlyTotalSales[m];
+        grandMake += monthlyTotalMake[m];
+        fHtml += `
+          <td class="text-center py-2 font-black text-blue-900 bg-blue-100/60">${monthlyTotalSales[m] > 0 ? monthlyTotalSales[m].toLocaleString() : '-'}</td>
+          <td class="text-center py-2 font-black text-indigo-900 bg-indigo-100/60">${monthlyTotalMake[m] > 0 ? monthlyTotalMake[m].toLocaleString() : '-'}</td>
+          <td class="border-r border-slate-400 bg-slate-200"></td>`;
+      }
+      fHtml += `
+        <td class="text-right px-2 py-2 font-black text-blue-900 bg-slate-300">${grandSales.toLocaleString()}</td>
+        <td class="text-right px-2 py-2 font-black text-indigo-900 bg-slate-300">${grandMake.toLocaleString()}</td>
+      </tr>`;
+      tfoot.innerHTML = fHtml;
+
+      // 前月末在庫入力イベント
+      document.querySelectorAll('.annual-init-stock-input').forEach(input => {
+        input.addEventListener('change', function() {
+          const pId = parseInt(this.dataset.apid, 10);
+          const val = Math.max(0, parseInt(this.value, 10) || 0);
+          const p = APP_STATE.products.find(item => item.id === pId);
+          if (p) {
+            p.annualInitStock = val;
+          }
+          renderAnnualTable();
+        });
+      });
+
+      // 販売・製造入力イベント
+      document.querySelectorAll('.annual-sales-input, .annual-make-input').forEach(input => {
+        input.addEventListener('change', function() {
+          const pId = parseInt(this.dataset.apid, 10);
+          const m = parseInt(this.dataset.month, 10);
+          const type = this.dataset.type;
+          const val = Math.max(0, parseInt(this.value, 10) || 0);
+          if (APP_STATE.annualMatrix[year][pId][m]) {
+            APP_STATE.annualMatrix[year][pId][m][type] = val;
+          }
+          renderAnnualTable();
+        });
+      });
+    }
+
+    // ==========================================
+    // 6. CSV各種モーダル設定
+    // ==========================================
+    function setupStockCsvModal() {
+      const modal = document.getElementById('stockCsvModal');
+      const fileInput = document.getElementById('stockCsvFileInput');
+      const btnApply = document.getElementById('btnApplyStockCsvData');
+      const previewArea = document.getElementById('stockCsvPreviewArea');
+      const previewList = document.getElementById('stockCsvPreviewList');
+      const matchCount = document.getElementById('stockCsvMatchCount');
+
+      document.getElementById('btnOpenStockCsvModal').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        fileInput.value = '';
+        btnApply.disabled = true;
+        previewArea.classList.add('hidden');
+      });
+
+      const closeModal = () => modal.classList.add('hidden');
+      document.getElementById('btnCloseStockCsvModal').addEventListener('click', closeModal);
+      document.getElementById('btnCancelStockCsvModal').addEventListener('click', closeModal);
+
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          let text = '';
+          try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
+          catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
+
+          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+          const rows = lines.map(line => line.split(','));
+          const totalCasesByProduct = {};
+          APP_STATE.products.forEach(p => { totalCasesByProduct[p.id] = 0; });
+          let hitRowCount = 0;
+
+          for (let r = 1; r < rows.length; r++) {
+            const row = rows[r];
+            if (!row || row.length < 5) continue;
+            const rowCode = cleanNum(row[10]);
+            const rowName = String(row[11] || '').normalize('NFKC').trim();
+            const caseVal = cleanNum(row[21]);
+
+            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
+            if (!matchedP && rowName) {
+              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
+            }
+            if (matchedP && caseVal > 0) {
+              totalCasesByProduct[matchedP.id] += caseVal;
+              hitRowCount++;
+            }
+          }
+
+          if (hitRowCount > 0) {
+            btnApply.disabled = false;
+            previewArea.classList.remove('hidden');
+            matchCount.textContent = `${hitRowCount}件の明細を集計成功`;
+            previewList.innerHTML = APP_STATE.products.map(p => `
+              <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                <span class="font-bold text-slate-800">${p.name}</span>
+                <span class="font-extrabold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
+                  合算実在庫: ${(totalCasesByProduct[p.id] || 0).toLocaleString()} c/s
+                </span>
+              </div>`).join('');
+            APP_STATE._tempStockResult = totalCasesByProduct;
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnApply.addEventListener('click', function() {
+        if (!APP_STATE._tempStockResult) return;
+        const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
+        if (!APP_STATE.realStockMapByMonth[ymKey]) APP_STATE.realStockMapByMonth[ymKey] = {};
+
+        const stockRecords = [];
+        APP_STATE.products.forEach(p => {
+          const val = APP_STATE._tempStockResult[p.id] || 0;
+          APP_STATE.realStockMapByMonth[ymKey][p.id] = val;
+          p.initStock = val;
+          stockRecords.push({ productId: p.id, productName: p.name, stock: val });
+        });
+
+        renderTable();
+        closeModal();
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('実在庫データをスプレッドシートへ保存中...', '⏳');
+          google.script.run
+            .withSuccessHandler(function(res) {
+              showToast(`${APP_STATE.year}年${APP_STATE.month}月度の月初実在庫をシートへ保存しました！`);
+            })
+            .apiSaveMonthlyStock(stockRecords, APP_STATE.year, APP_STATE.month);
+        }
+      });
+    }
+
+    function setupCsvModal() {
+      const modal = document.getElementById('csvModal');
+      const fileInput = document.getElementById('csvFileInput');
+      const btnApply = document.getElementById('btnApplyCsvData');
+      const previewArea = document.getElementById('csvPreviewArea');
+      const previewList = document.getElementById('csvPreviewList');
+      const matchCount = document.getElementById('csvMatchCount');
+
+      document.getElementById('btnOpenCsvModal').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        fileInput.value = '';
+        btnApply.disabled = true;
+        previewArea.classList.add('hidden');
+      });
+
+      const closeModal = () => modal.classList.add('hidden');
+      document.getElementById('btnCloseCsvModal').addEventListener('click', closeModal);
+      document.getElementById('btnCancelCsvModal').addEventListener('click', closeModal);
+
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          let text = '';
+          try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
+          catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
+
+          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+          const rows = lines.map(line => line.split(','));
+          const matchedData = [];
+          const dayColMap = {};
+          for (let d = 1; d <= 31; d++) dayColMap[d] = 7 + (d - 1) * 2;
+
+          for (let r = 1; r < rows.length; r++) {
+            const row = rows[r];
+            if (!row || row.length < 3) continue;
+            const rowCode = cleanNum(row[2]);
+            const rowName = String(row[3] || '').trim();
+
+            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
+            if (!matchedP && rowName) {
+              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
+            }
+
+            if (matchedP) {
+              const dailyCases = {};
+              let totalCases = 0;
+              for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+                const val = cleanNum(row[dayColMap[d]]);
+                dailyCases[d] = val;
+                totalCases += val;
+              }
+              matchedData.push({ productId: matchedP.id, productName: matchedP.name, dailyCases, totalCases });
+            }
+          }
+
+          if (matchedData.length > 0) {
+            btnApply.disabled = false;
+            previewArea.classList.remove('hidden');
+            matchCount.textContent = `${matchedData.length}品目 照合成功`;
+            previewList.innerHTML = matchedData.map(item => `
+              <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                <span class="font-bold text-slate-800">${item.productName}</span>
+                <span class="font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                  出庫計: ${item.totalCases.toLocaleString()} c/s
+                </span>
+              </div>`).join('');
+            APP_STATE._tempCsvOuts = matchedData;
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnApply.addEventListener('click', function() {
+        if (!APP_STATE._tempCsvOuts) return;
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            if (APP_STATE.matrix[p.id]?.[d]) APP_STATE.matrix[p.id][d].out = 0;
+          }
+        });
+        APP_STATE._tempCsvOuts.forEach(item => {
+          Object.keys(item.dailyCases).forEach(dStr => {
+            const d = parseInt(dStr, 10);
+            if (APP_STATE.matrix[item.productId]?.[d]) {
+              APP_STATE.matrix[item.productId][d].out = item.dailyCases[d];
+            }
+          });
+        });
+
+        const outRecords = [];
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
+            if (oVal > 0) outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
+          }
+        });
+
+        renderTable();
+        closeModal();
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('出庫データをスプレッドシートへ保存中...', '⏳');
+          google.script.run
+            .withSuccessHandler(function() {
+              showToast('出庫データをスプレッドシートへ自動保存しました！');
+            })
+            .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
+        }
+      });
+    }
+
+    // データ読み込み（GAS通信 + セーフガード）
     function loadDataFromGas() {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         document.getElementById('connectionBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GAS接続中`;
-        document.getElementById('connectionBadge').className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1';
-        APP_STATE.isGasConnected = true;
-
         google.script.run
           .withSuccessHandler(function(res) {
             if (res && res.success) {
               const ymKey = getYmKey(res.year, res.month);
-              if (res.realStockMap && Object.keys(res.realStockMap).length > 0) {
-                APP_STATE.realStockMapByMonth[ymKey] = res.realStockMap;
+              if (res.realStockMap) APP_STATE.realStockMapByMonth[ymKey] = res.realStockMap;
+              if (res.products && res.products.length > 0) {
+                const defaultCodeMap = { 1: 112, 2: 116, 3: 23, 4: 31, 5: 163, 6: 37, 7: 161, 8: 52, 9: 74, 10: 159, 11: 160, 12: 169, 13: 170, 14: 171 };
+                res.products.forEach(p => {
+                  if (defaultCodeMap[p.id]) p.code = defaultCodeMap[p.id];
+                });
+                APP_STATE.products = res.products;
               }
-              if (res.products) APP_STATE.products = res.products;
               if (res.matrix) APP_STATE.matrix = res.matrix;
-              APP_STATE.daysInMonth = res.daysInMonth || new Date(APP_STATE.year, APP_STATE.month, 0).getDate();
-              updateInitialStocksForCurrentMonth();
-              renderPeriodTabs();
-              renderTable();
-              showToast(`${APP_STATE.year}年${APP_STATE.month}月のデータをシートから取得しました`);
-            } else {
-              console.warn('GAS Fetch warning:', res ? res.message : 'Unknown response');
-              updateInitialStocksForCurrentMonth();
-              renderPeriodTabs();
-              renderTable();
+              APP_STATE.daysInMonth = res.daysInMonth || 31;
             }
+            updateInitialStocksForCurrentMonth();
+            renderPeriodTabs();
+            renderTable();
           })
           .withFailureHandler(function(err) {
-            console.warn('GAS Fetch error:', err);
+            console.error('GAS Load Error:', err);
             updateInitialStocksForCurrentMonth();
             renderPeriodTabs();
             renderTable();
@@ -1623,23 +1401,23 @@
           .apiGetInitialData(APP_STATE.year, APP_STATE.month);
       } else {
         document.getElementById('connectionBadge').innerHTML = `● プレビューモード`;
-        document.getElementById('connectionBadge').className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300';
-        APP_STATE.isGasConnected = false;
         updateInitialStocksForCurrentMonth();
         renderPeriodTabs();
         renderTable();
       }
     }
 
-    // イベントリスナーの登録
-    function setupEventListeners() {
+    // 初期起動
+    window.addEventListener('load', function() {
+      initMatrix();
+      setupStockCsvModal();
+      setupCsvModal();
+      renderPeriodTabs();
+      loadDataFromGas();
+
       document.getElementById('btnPrevMonth').addEventListener('click', () => {
-        if (APP_STATE.month === 1) {
-          APP_STATE.year--;
-          APP_STATE.month = 12;
-        } else {
-          APP_STATE.month--;
-        }
+        if (APP_STATE.month === 1) { APP_STATE.year--; APP_STATE.month = 12; }
+        else { APP_STATE.month--; }
         document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
         initMatrix();
         renderPeriodTabs();
@@ -1647,183 +1425,122 @@
       });
 
       document.getElementById('btnNextMonth').addEventListener('click', () => {
-        if (APP_STATE.month === 12) {
-          APP_STATE.year++;
-          APP_STATE.month = 1;
-        } else {
-          APP_STATE.month++;
-        }
+        if (APP_STATE.month === 12) { APP_STATE.year++; APP_STATE.month = 1; }
+        else { APP_STATE.month++; }
         document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
         initMatrix();
         renderPeriodTabs();
         loadDataFromGas();
       });
 
-      document.getElementById('btnAutoAllocate').addEventListener('click', () => {
-        APP_STATE.products.forEach(p => {
-          let workDays = 0;
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            const dow = new Date(APP_STATE.year, APP_STATE.month - 1, d).getDay();
-            if (dow !== 0 && dow !== 6) workDays++;
-          }
-          const dailyAvg = workDays > 0 ? Math.round((p.target || 0) / workDays) : 0;
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            const dow = new Date(APP_STATE.year, APP_STATE.month - 1, d).getDay();
-            if (dow !== 0 && dow !== 6) {
-              APP_STATE.matrix[p.id][d].out = dailyAvg;
-            } else {
-              APP_STATE.matrix[p.id][d].out = 0;
-            }
-          }
-        });
-        renderTable();
-        showToast('目標値から平日出庫を均等割り振りました');
+      document.getElementById('annualYearSelect').addEventListener('change', function() {
+        APP_STATE.annualYear = parseInt(this.value, 10);
+        document.getElementById('annualYearBannerTitle').textContent = `${APP_STATE.annualYear}年度 年間販売・製造・在庫計画表`;
+        renderAnnualTable();
       });
 
-      document.getElementById('btnClearOutputs').addEventListener('click', () => {
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            APP_STATE.matrix[p.id][d].out = 0;
-          }
-        });
-        renderTable();
-        showToast('当月の出庫予定・実績をクリアしました');
-      });
+      document.getElementById('btnReload').addEventListener('click', loadDataFromGas);
+      document.getElementById('btnPrintWeekly').addEventListener('click', runSafeA4Print);
 
-      document.getElementById('btnReload').addEventListener('click', () => {
-        loadDataFromGas();
-      });
-
-      // セル以外の場所をタップ・クリックした瞬間にポップアップを確実に消す
       document.addEventListener('pointerdown', (e) => {
-        if (!e.target.closest('.make-input') && !e.target.closest('.out-input')) {
-          hideInputAssistTooltip();
-        }
+        if (!e.target.closest('.make-input') && !e.target.closest('.out-input')) hideInputAssistTooltip();
       });
 
-      // Escapeキー押下時も即座に消す
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          hideInputAssistTooltip();
-        }
-      });
-
-      // 印刷ボタン
-      const btnPrint = document.getElementById('btnPrintWeekly');
-      if (btnPrint) {
-        btnPrint.addEventListener('click', () => {
-          runSafeA4Print();
-        });
-      }
-
-      document.getElementById('btnSaveToSheet').addEventListener('click', () => {
-        const planRecords = [];
-        const outRecords = [];
-
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            const mVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
-            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
-            if (mVal > 0) {
-              planRecords.push({ day: d, productId: p.id, productName: p.name, make: mVal });
-            }
-            if (oVal > 0) {
-              outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
-            }
-          }
-        });
-
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          showToast('スプレッドシートへ保存中...', '⏳');
-          google.script.run
-            .withSuccessHandler(function(planRes) {
-              google.script.run
-                .withSuccessHandler(function(outRes) {
-                  showToast(`製造計画(${planRes.count}件)・出庫(${outRes.count}件)をシートへ保存しました！`);
-                })
-                .withFailureHandler(function(err) {
-                  showToast('出庫保存エラー: ' + err, '⚠');
-                })
-                .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
-            })
-            .withFailureHandler(function(err) {
-              showToast('製造計画保存エラー: ' + err, '⚠');
-            })
-            .apiSaveDailyPlans(planRecords, APP_STATE.year, APP_STATE.month);
-        } else {
-          showToast(`【プレビュー】製造${planRecords.length}件・出庫${outRecords.length}件を保存しました（モック）`);
-        }
-      });
-
-      const kpiBar = document.getElementById('kpiBar');
-      const cardsArea = document.getElementById('kpiCardsArea');
-      const btnToggle = document.getElementById('btnToggleKpi');
-      const btnPin = document.getElementById('btnPinKpi');
-
-      btnToggle.addEventListener('click', () => {
+      document.getElementById('btnToggleKpi').addEventListener('click', () => {
         APP_STATE.isKpiCollapsed = !APP_STATE.isKpiCollapsed;
+        const cards = document.getElementById('kpiCardsArea');
         if (APP_STATE.isKpiCollapsed) {
-          cardsArea.classList.add('hidden');
+          cards.classList.add('hidden');
           document.getElementById('collapseIcon').textContent = '▲';
           document.getElementById('collapseText').textContent = 'カードを展開';
         } else {
-          cardsArea.classList.remove('hidden');
+          cards.classList.remove('hidden');
           document.getElementById('collapseIcon').textContent = '▼';
           document.getElementById('collapseText').textContent = 'カードを閉じる';
         }
       });
 
-      btnPin.addEventListener('click', () => {
+      document.getElementById('btnPinKpi').addEventListener('click', () => {
         APP_STATE.isKpiPinned = !APP_STATE.isKpiPinned;
+        const bar = document.getElementById('kpiBar');
         if (APP_STATE.isKpiPinned) {
-          kpiBar.classList.add('fixed-pinned');
+          bar.classList.add('fixed-pinned');
           document.getElementById('pinText').textContent = '固定解除';
         } else {
-          kpiBar.classList.remove('fixed-pinned');
+          bar.classList.remove('fixed-pinned');
           document.getElementById('pinText').textContent = '上部に固定';
         }
       });
 
-      document.getElementById('btnExportCsv').addEventListener('click', () => {
-        let csv = '商品ID,商品名,月初在庫,累計製造,累計出庫';
-        for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-          csv += `,${d}日製造,${d}日出庫,${d}日残数`;
+      document.getElementById('btnSyncToDailyTarget').addEventListener('click', () => {
+        const y = APP_STATE.year;
+        const m = APP_STATE.month;
+        if (APP_STATE.annualMatrix[y]) {
+          APP_STATE.products.forEach(p => {
+            const planMake = APP_STATE.annualMatrix[y][p.id]?.[m]?.make;
+            if (planMake !== undefined && planMake > 0) p.target = planMake;
+          });
         }
-        csv += '\n';
+        switchMainTab('daily');
+        showToast(`年間計画の${m}月度製造数を日別計画の目標へ反映しました！`, '🔗');
+      });
 
+      document.getElementById('btnSaveAnnualPlan').addEventListener('click', () => {
+        const records = [];
+        const y = APP_STATE.annualYear;
+        initAnnualMatrix(y);
         APP_STATE.products.forEach(p => {
-          let cur = p.initStock || 0;
-          let mSum = 0, oSum = 0;
-          let dayParts = '';
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            const m = APP_STATE.matrix[p.id]?.[d]?.make || 0;
-            const o = APP_STATE.matrix[p.id]?.[d]?.out || 0;
-            mSum += m; oSum += o; cur = cur + m - o;
-            dayParts += `,${m},${o},${cur}`;
+          let runningStock = p.masterInitStock || 0;
+          for (let m = 1; m <= 12; m++) {
+            const sVal = APP_STATE.annualMatrix[y][p.id]?.[m]?.sales || 0;
+            const mVal = APP_STATE.annualMatrix[y][p.id]?.[m]?.make || 0;
+            runningStock = runningStock + mVal - sVal;
+            records.push({
+              ymKey: `${y}-${String(m).padStart(2, '0')}`,
+              productId: p.id,
+              productName: p.name,
+              sales: sVal,
+              make: mVal,
+              stock: runningStock
+            });
           }
-          csv += `"${p.id}","${p.name}",${p.initStock},${mSum},${oSum}${dayParts}\n`;
         });
 
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `製造出庫管理表_${APP_STATE.year}年${APP_STATE.month}月.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast(`${y}年度の年間計画をスプレッドシートへ保存中...`, '⏳');
+          google.script.run
+            .withSuccessHandler(() => showToast(`${y}年度の年間計画を保存しました！`, '💾'))
+            .apiSaveAnnualPlan(records, y);
+        } else {
+          showToast(`${y}年度の年間計画を保存しました（プレビュー）`, '💾');
+        }
       });
-    }
 
-    // アプリケーション起動時の初期化
-    window.onload = function() {
-      initMatrix();
-      setupStockCsvModal();
-      setupCsvModal();
-      setupEventListeners();
-      renderPeriodTabs();
-      loadDataFromGas();
-    };
+      document.getElementById('btnSaveToSheet').addEventListener('click', () => {
+        const planRecords = [];
+        const outRecords = [];
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            const mVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
+            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
+            if (mVal > 0) planRecords.push({ day: d, productId: p.id, productName: p.name, make: mVal });
+            if (oVal > 0) outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
+          }
+        });
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('スプレッドシートへ保存中...', '⏳');
+          google.script.run
+            .withSuccessHandler(() => {
+              google.script.run
+                .withSuccessHandler(() => { showToast(`製造計画(${planRecords.length}件)・出庫(${outRecords.length}件)を保存しました！`); })
+                .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
+            })
+            .apiSaveDailyPlans(planRecords, APP_STATE.year, APP_STATE.month);
+        } else {
+          showToast(`製造${planRecords.length}件・出庫${outRecords.length}件を保存しました（プレビュー）`);
+        }
+      });
+    });
   </script>
 </body>
 </html>
-```

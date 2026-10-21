@@ -1,17 +1,17 @@
 /**
- * 【ファイル1: Code.gs】
- * 製造計画・入出庫管理 Webアプリのサーバーサイド通信スクリプト
+ * 【Code.gs】製造計画・入出庫・年間計画統合システム サーバーサイド
+ * 貼り付け先: GASの「コード.gs」
  */
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('製造計画・入出庫管理システム')
+    .setTitle('製造計画・入出庫・年間計画統合システム')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }
 
 /**
- * 初期データ取得API (商品マスタ、当月の製造計画、出庫履歴を一括返却)
+ * 初期データ一括取得API (商品マスタ、当月計画、出庫履歴、確定実在庫、年間計画)
  */
 function apiGetInitialData(year, month) {
   try {
@@ -19,7 +19,6 @@ function apiGetInitialData(year, month) {
     year = Number(year) || 2026;
     month = Number(month) || 10;
 
-    // 基準年月（初期マスタ設定月）の取得
     let baseYear = 2026;
     let baseMonth = 10;
     const configSheet = ss.getSheetByName('システム設定');
@@ -31,41 +30,58 @@ function apiGetInitialData(year, month) {
       });
     }
 
-    // 1. 商品マスタの読み込み
+    // 商品マスタの読み込み（万が一シートが空でも画面が壊れないフォールバック付き）
     const masterSheet = ss.getSheetByName('商品マスタ');
-    if (!masterSheet) {
-      throw new Error('シート「商品マスタ」が見つかりません。先に Setup.gs の setupProductionSystem を実行してください。');
-    }
-
-    const masterValues = masterSheet.getDataRange().getValues();
     const products = [];
-    for (let i = 1; i < masterValues.length; i++) {
-      const row = masterValues[i];
-      if (row[0] !== '' && row[0] !== undefined) {
-        products.push({
-          id: Number(row[0]),
-          name: String(row[1]),
-          spec: String(row[2] || ''),
-          target: Number(row[3]) || 0,
-          masterInitStock: Number(row[4]) || 0, // マスタ設定の基準在庫
-          initStock: Number(row[4]) || 0,       // 当月月初在庫（後で自動計算）
-          safeStock: Number(row[5]) || 0,
-          memo: String(row[6] || ''),
-          packQty: Number(row[7]) || 1          // H列: 入数
-        });
+    if (masterSheet && masterSheet.getLastRow() > 1) {
+      const masterValues = masterSheet.getDataRange().getValues();
+      for (let i = 1; i < masterValues.length; i++) {
+        const row = masterValues[i];
+        if (row[0] !== '' && row[0] !== undefined) {
+          products.push({
+            id: Number(row[0]),
+            code: Number(row[0]),
+            name: String(row[1]),
+            spec: String(row[2] || ''),
+            target: Number(row[3]) || 0,
+            masterInitStock: Number(row[4]) || 0,
+            initStock: Number(row[4]) || 0,
+            safeStock: Number(row[5]) || 0,
+            memo: String(row[6] || ''),
+            packQty: Number(row[7]) || 1
+          });
+        }
       }
     }
 
-    const daysInMonth = new Date(year, month, 0).getDate();
+    // デフォルト14品目のフォールバック
+    if (products.length === 0) {
+      const defaultProducts = [
+        { id: 1,  code: 112, name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 7200, masterInitStock: 6208, initStock: 6208, safeStock: 500 },
+        { id: 2,  code: 116, name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 60,   masterInitStock: 50,   initStock: 50,   safeStock: 20 },
+        { id: 3,  code: 23,  name: '博多純氷カチ割り1kg',   spec: '1kg×10',  packQty: 10, target: 1400, masterInitStock: 706,  initStock: 706,  safeStock: 200 },
+        { id: 4,  code: 31,  name: 'おいしい氷1kg',         spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 2015, initStock: 2015, safeStock: 300 },
+        { id: 5,  code: 163, name: 'ドンキホーテ極氷1.1kg', spec: '1.1kg×8', packQty: 10, target: 1400, masterInitStock: 2336, initStock: 2336, safeStock: 200 },
+        { id: 6,  code: 37,  name: 'ヒロキュー千年氷1kg',   spec: '1kg×10',  packQty: 10, target: 500,  masterInitStock: 200,  initStock: 200,  safeStock: 100 },
+        { id: 7,  code: 161, name: 'CGC1kg',                spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 11,   initStock: 11,   safeStock: 300 },
+        { id: 8,  code: 52,  name: 'おいしい氷2kgチャック', spec: '2kg×5',   packQty: 6,  target: 1600, masterInitStock: 1761, initStock: 1761, safeStock: 250 },
+        { id: 9,  code: 74,  name: 'おいしい氷1.1kg',       spec: '1.1kg×8', packQty: 12, target: 3600, masterInitStock: 5975, initStock: 5975, safeStock: 600 },
+        { id: 10, code: 159, name: 'ゆめイチ1kg',           spec: '1kg×10',  packQty: 12, target: 2400, masterInitStock: 1636, initStock: 1636, safeStock: 400 },
+        { id: 11, code: 160, name: 'ゆめイチ2.1kg',         spec: '2.1kg×4', packQty: 6,  target: 4000, masterInitStock: 5829, initStock: 5829, safeStock: 600 },
+        { id: 12, code: 169, name: 'スティック40mm',        spec: '本',      packQty: 1,  target: 200,  masterInitStock: 69,   initStock: 69,   safeStock: 30 },
+        { id: 13, code: 170, name: 'スティック60mm',        spec: '本',      packQty: 1,  target: 50,   masterInitStock: 30,   initStock: 30,   safeStock: 10 },
+        { id: 14, code: 171, name: 'スティック110mm',       spec: '本',      packQty: 1,  target: 50,   masterInitStock: 40,   initStock: 40,   safeStock: 10 }
+      ];
+      defaultProducts.forEach(p => products.push(p));
+    }
 
-    // 製造計画シートと出庫実績シートを事前に確実に読み込み（スコープエラー防止）
+    const daysInMonth = new Date(year, month, 0).getDate();
     const planSheet = ss.getSheetByName('日別製造計画');
     const planValues = (planSheet && planSheet.getLastRow() > 1) ? planSheet.getDataRange().getValues() : [];
 
     const outSheet = ss.getSheetByName('出庫実績トランザクション');
     const outValues = (outSheet && outSheet.getLastRow() > 1) ? outSheet.getDataRange().getValues() : [];
 
-    // 1-2. 月別月初実在庫シートの読み込み（当月がCSV確定実在庫か判定）
     const ymKey = Utilities.formatString('%04d-%02d', year, month);
     let isRealStockConfirmed = false;
     const realStockMap = {};
@@ -85,62 +101,11 @@ function apiGetInitialData(year, month) {
     }
 
     if (isRealStockConfirmed) {
-      // 当月は実在庫CSVで確定済み：確定実在庫を適用
       products.forEach(p => {
-        if (realStockMap[p.id] !== undefined) {
-          p.initStock = realStockMap[p.id];
-        }
+        if (realStockMap[p.id] !== undefined) p.initStock = realStockMap[p.id];
       });
-    } else {
-      // 2. 未確定の場合：自動引き継ぎ計算（基準日から対象月1日までの全製造・全出庫を集計）
-      const targetStartDate = new Date(year, month - 1, 1);
-      const baseStartDate = new Date(baseYear, baseMonth - 1, 1);
-
-      const diffMap = {};
-      products.forEach(p => { diffMap[p.id] = 0; });
-
-      // 未来月への繰越の場合
-      if (targetStartDate.getTime() > baseStartDate.getTime()) {
-        for (let i = 1; i < planValues.length; i++) {
-          const d = new Date(planValues[i][0]);
-          if (!isNaN(d.getTime()) && d >= baseStartDate && d < targetStartDate) {
-            const pId = Number(planValues[i][1]);
-            if (diffMap[pId] !== undefined) diffMap[pId] += (Number(planValues[i][3]) || 0);
-          }
-        }
-        for (let i = 1; i < outValues.length; i++) {
-          const d = new Date(outValues[i][0]);
-          if (!isNaN(d.getTime()) && d >= baseStartDate && d < targetStartDate) {
-            const pId = Number(outValues[i][1]);
-            if (diffMap[pId] !== undefined) diffMap[pId] -= (Number(outValues[i][3]) || 0);
-          }
-        }
-        products.forEach(p => {
-          p.initStock = p.masterInitStock + (diffMap[p.id] || 0);
-        });
-      } else if (targetStartDate.getTime() < baseStartDate.getTime()) {
-        // 過去月へ遡る場合
-        for (let i = 1; i < planValues.length; i++) {
-          const d = new Date(planValues[i][0]);
-          if (!isNaN(d.getTime()) && d >= targetStartDate && d < baseStartDate) {
-            const pId = Number(planValues[i][1]);
-            if (diffMap[pId] !== undefined) diffMap[pId] += (Number(planValues[i][3]) || 0);
-          }
-        }
-        for (let i = 1; i < outValues.length; i++) {
-          const d = new Date(outValues[i][0]);
-          if (!isNaN(d.getTime()) && d >= targetStartDate && d < baseStartDate) {
-            const pId = Number(outValues[i][1]);
-            if (diffMap[pId] !== undefined) diffMap[pId] -= (Number(outValues[i][3]) || 0);
-          }
-        }
-        products.forEach(p => {
-          p.initStock = p.masterInitStock - (diffMap[p.id] || 0);
-        });
-      }
     }
 
-    // 当月のマトリクス初期化
     const matrix = {};
     products.forEach(p => {
       matrix[p.id] = {};
@@ -149,33 +114,23 @@ function apiGetInitialData(year, month) {
       }
     });
 
-    // 当月の製造計画データをマトリクスへ展開
     for (let i = 1; i < planValues.length; i++) {
       const dateVal = new Date(planValues[i][0]);
-      if (!isNaN(dateVal.getTime())) {
-        if (dateVal.getFullYear() === year && (dateVal.getMonth() + 1) === month) {
-          const pId = Number(planValues[i][1]);
-          const day = dateVal.getDate();
-          const qty = Number(planValues[i][3]) || 0;
-          if (matrix[pId] && matrix[pId][day]) {
-            matrix[pId][day].make = qty;
-          }
-        }
+      if (!isNaN(dateVal.getTime()) && dateVal.getFullYear() === year && (dateVal.getMonth() + 1) === month) {
+        const pId = Number(planValues[i][1]);
+        const day = dateVal.getDate();
+        const qty = Number(planValues[i][3]) || 0;
+        if (matrix[pId] && matrix[pId][day]) matrix[pId][day].make = qty;
       }
     }
 
-    // 当月の出庫実績データをマトリクスへ展開
     for (let i = 1; i < outValues.length; i++) {
       const dateVal = new Date(outValues[i][0]);
-      if (!isNaN(dateVal.getTime())) {
-        if (dateVal.getFullYear() === year && (dateVal.getMonth() + 1) === month) {
-          const pId = Number(outValues[i][1]);
-          const day = dateVal.getDate();
-          const qty = Number(outValues[i][3]) || 0;
-          if (matrix[pId] && matrix[pId][day]) {
-            matrix[pId][day].out += qty;
-          }
-        }
+      if (!isNaN(dateVal.getTime()) && dateVal.getFullYear() === year && (dateVal.getMonth() + 1) === month) {
+        const pId = Number(outValues[i][1]);
+        const day = dateVal.getDate();
+        const qty = Number(outValues[i][3]) || 0;
+        if (matrix[pId] && matrix[pId][day]) matrix[pId][day].out += qty;
       }
     }
 
@@ -183,9 +138,6 @@ function apiGetInitialData(year, month) {
       success: true,
       year: year,
       month: month,
-      baseYear: baseYear,
-      baseMonth: baseMonth,
-      isAutoCarried: (year !== baseYear || month !== baseMonth),
       isRealStockConfirmed: isRealStockConfirmed,
       realStockMap: realStockMap,
       daysInMonth: daysInMonth,
@@ -197,68 +149,40 @@ function apiGetInitialData(year, month) {
   }
 }
 
-/**
- * 月別月初実在庫の一括保存API（月別月初実在庫シートへ上書き保存）
- */
+/** 月別実在庫の一括保存 */
 function apiSaveMonthlyStock(records, year, month) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let stockSheet = ss.getSheetByName('月別月初実在庫');
-    if (!stockSheet) {
-      stockSheet = ss.insertSheet('月別月初実在庫');
-      stockSheet.appendRow(['対象年月(YYYY-MM)', '商品ID', '商品名', '確定実在庫(cs)', '登録日時']);
-      stockSheet.getRange(1, 1, 1, 5)
-        .setBackground('#0e7490')
-        .setFontColor('#ffffff')
-        .setFontWeight('bold');
-    }
-
+    let stockSheet = ss.getSheetByName('月別月初実在庫') || ss.insertSheet('月別月初実在庫');
     year = Number(year);
     month = Number(month);
     const ymKey = Utilities.formatString('%04d-%02d', year, month);
 
-    // 既存の当月実在庫データを削除（上書き）
     const data = stockSheet.getDataRange().getValues();
     for (let i = data.length - 1; i >= 1; i--) {
-      const rowYm = String(data[i][0]).trim();
-      if (rowYm === ymKey) {
-        stockSheet.deleteRow(i + 1);
-      }
+      if (String(data[i][0]).trim() === ymKey) stockSheet.deleteRow(i + 1);
     }
 
-    // 新規レコードを一括追記
     const rowsToAdd = [];
     const now = new Date();
-    records.forEach(r => {
-      rowsToAdd.push([ymKey, r.productId, r.productName, r.stock, now]);
-    });
-
+    records.forEach(r => rowsToAdd.push([ymKey, r.productId, r.productName, r.stock, now]));
     if (rowsToAdd.length > 0) {
       stockSheet.getRange(stockSheet.getLastRow() + 1, 1, rowsToAdd.length, 5).setValues(rowsToAdd);
     }
-
     return { success: true, count: rowsToAdd.length };
   } catch (err) {
     return { success: false, message: err.toString() };
   }
 }
 
-/**
- * 製造計画一括保存API
- */
+/** 製造計画の一括保存 */
 function apiSaveDailyPlans(records, year, month) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let planSheet = ss.getSheetByName('日別製造計画');
-    if (!planSheet) {
-      planSheet = ss.insertSheet('日別製造計画');
-      planSheet.appendRow(['日付(YYYY-MM-DD)', '商品ID', '商品名', '計画製造数', '更新日時']);
-    }
-
+    let planSheet = ss.getSheetByName('日別製造計画') || ss.insertSheet('日別製造計画');
     year = Number(year);
     month = Number(month);
 
-    // 既存の当月計画データを削除
     const data = planSheet.getDataRange().getValues();
     for (let i = data.length - 1; i >= 1; i--) {
       const d = new Date(data[i][0]);
@@ -267,7 +191,6 @@ function apiSaveDailyPlans(records, year, month) {
       }
     }
 
-    // 新規計画レコードを一括追記
     const rowsToAdd = [];
     const now = new Date();
     records.forEach(r => {
@@ -280,29 +203,20 @@ function apiSaveDailyPlans(records, year, month) {
     if (rowsToAdd.length > 0) {
       planSheet.getRange(planSheet.getLastRow() + 1, 1, rowsToAdd.length, 5).setValues(rowsToAdd);
     }
-
     return { success: true, count: rowsToAdd.length };
   } catch (err) {
     return { success: false, message: err.toString() };
   }
 }
 
-/**
- * 出庫実績・予定の一括保存API（当月分を「出庫実績トランザクション」シートへ上書き保存）
- */
+/** 出庫実績の一括保存 */
 function apiSaveDailyOuts(records, year, month) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let outSheet = ss.getSheetByName('出庫実績トランザクション');
-    if (!outSheet) {
-      outSheet = ss.insertSheet('出庫実績トランザクション');
-      outSheet.appendRow(['出庫年月日(YYYY-MM-DD)', '商品ID', '商品名', '出庫数(cs)', '区分(実績/予定)', '登録日時']);
-    }
-
+    let outSheet = ss.getSheetByName('出庫実績トランザクション') || ss.insertSheet('出庫実績トランザクション');
     year = Number(year);
     month = Number(month);
 
-    // 既存の当月出庫データを削除（再取り込み時の重複防止）
     const data = outSheet.getDataRange().getValues();
     for (let i = data.length - 1; i >= 1; i--) {
       const d = new Date(data[i][0]);
@@ -311,7 +225,6 @@ function apiSaveDailyOuts(records, year, month) {
       }
     }
 
-    // 新規出庫レコードを一括追記
     const rowsToAdd = [];
     const now = new Date();
     records.forEach(r => {
@@ -324,7 +237,31 @@ function apiSaveDailyOuts(records, year, month) {
     if (rowsToAdd.length > 0) {
       outSheet.getRange(outSheet.getLastRow() + 1, 1, rowsToAdd.length, 6).setValues(rowsToAdd);
     }
+    return { success: true, count: rowsToAdd.length };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
 
+/** 年間計画の一括保存 */
+function apiSaveAnnualPlan(records, year) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let annualSheet = ss.getSheetByName('年間計画') || ss.insertSheet('年間計画');
+    year = Number(year);
+
+    const data = annualSheet.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      const rowYm = String(data[i][0]).trim();
+      if (rowYm.startsWith(String(year))) annualSheet.deleteRow(i + 1);
+    }
+
+    const rowsToAdd = [];
+    const now = new Date();
+    records.forEach(r => rowsToAdd.push([r.ymKey, r.productId, r.productName, r.sales, r.make, r.stock, now]));
+    if (rowsToAdd.length > 0) {
+      annualSheet.getRange(annualSheet.getLastRow() + 1, 1, rowsToAdd.length, 7).setValues(rowsToAdd);
+    }
     return { success: true, count: rowsToAdd.length };
   } catch (err) {
     return { success: false, message: err.toString() };
