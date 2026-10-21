@@ -11,6 +11,29 @@ function doGet() {
 }
 
 /**
+ * 年月セルの値を安全にパースするヘルパー関数
+ * （Dateオブジェクト、文字列 "2026-01", "2026/01" などすべてに対応）
+ */
+function parseYm(val) {
+  if (!val) return null;
+  if (val instanceof Date) {
+    return {
+      year: val.getFullYear(),
+      month: val.getMonth() + 1
+    };
+  }
+  const str = String(val).trim().replace(/^['"]/, '');
+  const m = str.match(/(\d{4})[-/年](\d{1,2})/);
+  if (m) {
+    return {
+      year: Number(m[1]),
+      month: Number(m[2])
+    };
+  }
+  return null;
+}
+
+/**
  * 初期データ一括取得API (商品マスタ、当月計画、出庫履歴、確定実在庫、年間計画)
  */
 function apiGetInitialData(year, month) {
@@ -134,6 +157,55 @@ function apiGetInitialData(year, month) {
       }
     }
 
+    // --- 年間計画データの読み込み（全年度対応・日付型自動認識） ---
+    const annualSheet = ss.getSheetByName('年間計画');
+    const annualMatrixByYear = {};
+    const annualInitStocksByYear = {}; // 年間計画専用の前月末在庫マップ
+
+    if (annualSheet && annualSheet.getLastRow() > 1) {
+      const annualValues = annualSheet.getDataRange().getValues();
+      for (let i = 1; i < annualValues.length; i++) {
+        const parsed = parseYm(annualValues[i][0]);
+        if (parsed) {
+          const y = parsed.year;
+          const m = parsed.month;
+          const pId = Number(annualValues[i][1]);
+          const sales = Number(annualValues[i][3]) || 0;
+          const make = Number(annualValues[i][4]) || 0;
+          let customStock = null;
+          if (annualValues[i][8] !== undefined && annualValues[i][8] !== '') {
+            customStock = Number(annualValues[i][8]);
+          }
+
+          // 前月末在庫（列7または列8）の読み取り
+          let initStk = undefined;
+          if (annualValues[i][6] !== undefined && typeof annualValues[i][6] === 'number') {
+            initStk = Number(annualValues[i][6]);
+          } else if (annualValues[i][7] !== undefined && typeof annualValues[i][7] === 'number') {
+            initStk = Number(annualValues[i][7]);
+          } else if (!isNaN(Number(annualValues[i][6])) && annualValues[i][6] !== '') {
+            if (!(annualValues[i][6] instanceof Date)) {
+              initStk = Number(annualValues[i][6]);
+            }
+          }
+
+          if (!annualMatrixByYear[y]) annualMatrixByYear[y] = {};
+          if (!annualInitStocksByYear[y]) annualInitStocksByYear[y] = {};
+
+          if (!annualMatrixByYear[y][pId]) {
+            annualMatrixByYear[y][pId] = {};
+            for (let k = 1; k <= 12; k++) annualMatrixByYear[y][pId][k] = { sales: 0, make: 0, customStock: null };
+          }
+          if (m >= 1 && m <= 12) {
+            annualMatrixByYear[y][pId][m] = { sales: sales, make: make, customStock: customStock };
+          }
+          if (initStk !== undefined && (m === 1 || annualInitStocksByYear[y][pId] === undefined)) {
+            annualInitStocksByYear[y][pId] = initStk;
+          }
+        }
+      }
+    }
+
     return {
       success: true,
       year: year,
@@ -142,7 +214,10 @@ function apiGetInitialData(year, month) {
       realStockMap: realStockMap,
       daysInMonth: daysInMonth,
       products: products,
-      matrix: matrix
+      matrix: matrix,
+      annualMatrix: annualMatrixByYear[year] || {},
+      annualMatrixByYear: annualMatrixByYear,
+      annualInitStocksByYear: annualInitStocksByYear
     };
   } catch (err) {
     return { success: false, message: err.toString() };
@@ -250,17 +325,45 @@ function apiSaveAnnualPlan(records, year) {
     let annualSheet = ss.getSheetByName('年間計画') || ss.insertSheet('年間計画');
     year = Number(year);
 
+    // ヘッダーが未設定の場合は初期化
+    if (annualSheet.getLastRow() === 0) {
+      annualSheet.appendRow(['年月', '商品ID', '商品名', '販売数', '計画製造数', '月末在庫', '前月末在庫', '更新日時', '手入力実在庫']);
+      annualSheet.getRange(1, 1, 1, 9)
+        .setBackground('#1e1b4b')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold');
+    }
+
     const data = annualSheet.getDataRange().getValues();
+    // 該当年の古い行を確実に判定して削除（上書き保存）
     for (let i = data.length - 1; i >= 1; i--) {
-      const rowYm = String(data[i][0]).trim();
-      if (rowYm.startsWith(String(year))) annualSheet.deleteRow(i + 1);
+      const parsed = parseYm(data[i][0]);
+      if (parsed && parsed.year === year) {
+        annualSheet.deleteRow(i + 1);
+      }
     }
 
     const rowsToAdd = [];
     const now = new Date();
-    records.forEach(r => rowsToAdd.push([r.ymKey, r.productId, r.productName, r.sales, r.make, r.stock, now]));
+    records.forEach(r => {
+      rowsToAdd.push([
+        r.ymKey,
+        r.productId,
+        r.productName,
+        r.sales,
+        r.make,
+        r.stock,
+        (r.annualInitStock !== undefined ? r.annualInitStock : 0),
+        now,
+        (r.customStock !== undefined && r.customStock !== null && r.customStock !== '' ? r.customStock : '')
+      ]);
+    });
+    
     if (rowsToAdd.length > 0) {
-      annualSheet.getRange(annualSheet.getLastRow() + 1, 1, rowsToAdd.length, 7).setValues(rowsToAdd);
+      const startRow = annualSheet.getLastRow() + 1;
+      const targetRange = annualSheet.getRange(startRow, 1, rowsToAdd.length, 9);
+      targetRange.setNumberFormat('@'); // テキスト書式を強制して自動変換を防止
+      targetRange.setValues(rowsToAdd);
     }
     return { success: true, count: rowsToAdd.length };
   } catch (err) {

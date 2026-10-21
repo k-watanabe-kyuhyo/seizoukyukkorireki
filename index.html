@@ -2,32 +2,72 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>製造計画・入出庫・年間計画統合システム</title>
-  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
-  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif', 'Hiragino Kaku Gothic ProN', 'Meiryo', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
   <style>
-    body { font-family: 'Inter', 'Noto Sans JP', sans-serif; }
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    input[type="number"] { -moz-appearance: textfield; }
-    ::-webkit-scrollbar { width: 7px; height: 7px; }
-    ::-webkit-scrollbar-track { background: #cbd5e1; }
-    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    /* ブラウザ標準の上下矢印（スピンボタン）を完全に消去 */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none !important;
+      margin: 0 !important;
+    }
+    input[type=number] {
+      -moz-appearance: textfield !important;
+    }
 
-    /* 日別テーブル用固定列（品目名列のみ固定） */
-    .th-date-header { position: sticky; top: 0; z-index: 30; height: 28px; }
-    .th-sub-header { position: sticky; top: 28px; z-index: 29; height: 24px; }
-    .sticky-corner-1 { position: sticky; top: 0; left: 0; z-index: 45; }
-    .sticky-col-1 { position: sticky; left: 0; z-index: 20; }
+    /* テーブル全体の固定枠線崩れ防止 */
+    #mainTable, #annualTable {
+      border-collapse: separate !important;
+      border-spacing: 0;
+    }
 
-    #tableBody tr:hover td { background-color: #dbeafe !important; }
-    #tableBody tr:hover td.sticky-col-1 { background-color: #bfdbfe !important; }
+    /* 日別管理用 固定ヘッダー（完全不透明） */
+    .th-date-header { position: sticky; top: 0; z-index: 32; height: 28px; }
+    .th-sub-header { position: sticky; top: 28px; z-index: 31; height: 24px; }
+    
+    /* 左端3列の完全固定（完全不透明なベタ塗りで背後の文字透過を100%防止） */
+    .sticky-corner-1 { position: sticky; top: 0; left: 0px; z-index: 45; background-color: #1e293b !important; }
+    .sticky-corner-2 { position: sticky; top: 0; left: 150px; z-index: 45; background-color: #1e293b !important; }
+    .sticky-corner-3 { position: sticky; top: 0; left: 230px; z-index: 45; background-color: #1e293b !important; }
+    
+    .sticky-col-1 { position: sticky; left: 0px; z-index: 20; background-color: #ffffff !important; }
+    .sticky-col-2 { position: sticky; left: 150px; z-index: 20; background-color: #f1f5f9 !important; }
+    .sticky-col-3 { position: sticky; left: 230px; z-index: 20; background-color: #f8fafc !important; }
+
+    #tableBody tr.even-row td.sticky-col-1 { background-color: #f8fafc !important; }
+    #tableBody tr.even-row td.sticky-col-2 { background-color: #e2e8f0 !important; }
+    #tableBody tr.even-row td.sticky-col-3 { background-color: #f1f5f9 !important; }
+
+    #tableBody tr:hover td { background-color: #f1f5f9; }
+    #tableBody tr:hover td.sticky-col-1 { background-color: #e2e8f0 !important; }
+    #tableBody tr:hover td.sticky-col-2 { background-color: #cbd5e1 !important; }
+    #tableBody tr:hover td.sticky-col-3 { background-color: #e2e8f0 !important; }
+
+    /* 年間計画用 固定列 */
+    .annual-sticky-col-1 { position: sticky; left: 0px; z-index: 20; background-color: #ffffff !important; }
+    .annual-sticky-col-2 { position: sticky; left: 150px; z-index: 20; background-color: #ffffff !important; }
+    .annual-sticky-col-3 { position: sticky; left: 200px; z-index: 20; background-color: #fffbeb !important; }
+    .annual-sticky-th-1 { position: sticky; top: 0; left: 0px; z-index: 45; background-color: #1e293b !important; }
+    .annual-sticky-th-2 { position: sticky; top: 0; left: 150px; z-index: 45; background-color: #1e293b !important; }
+    .annual-sticky-th-3 { position: sticky; top: 0; left: 200px; z-index: 45; background-color: #1e293b !important; }
+    .annual-th-top { position: sticky; top: 0; z-index: 32; height: 28px; }
+    .annual-th-sub { position: sticky; top: 28px; z-index: 31; height: 24px; }
+
+    #annualTableBody tr.even-row td.annual-sticky-col-1,
+    #annualTableBody tr.even-row td.annual-sticky-col-2 { background-color: #f8fafc !important; }
+    #annualTableBody tr.even-row td.annual-sticky-col-3 { background-color: #fef3c7 !important; }
 
     #kpiBar.fixed-pinned {
       position: sticky; top: 52px; z-index: 25;
@@ -35,16 +75,7 @@
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-bottom: 1px solid #cbd5e1;
     }
 
-    /* 年間計画テーブル用固定列（品目名列のみ固定） */
-    .annual-sticky-col-1 { position: sticky; left: 0; z-index: 25; }
-    .annual-sticky-th-1 { position: sticky; top: 0; left: 0; z-index: 45; }
-    .annual-th-top { position: sticky; top: 0; z-index: 30; height: 28px; }
-    .annual-th-sub { position: sticky; top: 28px; z-index: 29; height: 24px; }
-
-    #annualTableBody tr:hover td { background-color: #f0fdf4 !important; }
-    #annualTableBody tr:hover td.annual-sticky-col-1 { background-color: #dcfce7 !important; }
-
-    /* A4横1枚印刷専用スタイル */
+    /* A4横 1枚印刷最適化 */
     @media print {
       @page { size: A4 landscape; margin: 8mm 10mm; }
       html, body {
@@ -54,12 +85,9 @@
       body > *:not(#print-clean-wrapper) { display: none !important; }
       #print-clean-wrapper {
         display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important;
-        page-break-after: avoid !important; break-after: avoid !important;
-        page-break-inside: avoid !important; break-inside: avoid !important;
       }
       #print-clean-wrapper table {
         width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important;
-        page-break-inside: avoid !important; break-inside: avoid !important;
       }
     }
     @media screen {
@@ -67,43 +95,32 @@
     }
   </style>
 </head>
-<body class="bg-slate-200/80 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased text-xs select-none">
 
-  <!-- 1. メインヘッダー（画面切り替えタブ内蔵） -->
-  <header class="bg-slate-900 text-white px-4 py-2 flex flex-wrap items-center justify-between gap-3 shadow-md sticky top-0 z-50">
+  <!-- ヘッダーエリア -->
+  <header class="bg-slate-900 text-white px-4 py-2 flex flex-wrap items-center justify-between shadow-md z-40 gap-2 border-b border-slate-800">
     <div class="flex items-center space-x-3">
-      <div class="bg-blue-600 text-white p-1.5 rounded-lg shadow">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-      </div>
-      <div>
-        <h1 class="font-extrabold text-sm sm:text-base tracking-wide flex items-center gap-2">
-          製造計画・入出庫・年間計画統合システム
-        </h1>
-        <p class="text-[10px] text-slate-400">大日程(年間S&OP)から日別製造計画への同期化連携</p>
-      </div>
-    </div>
-
-    <!-- 画面切り替えタブ -->
-    <div class="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700 shadow-inner">
-      <button id="navTabDaily" onclick="switchMainTab('daily')" class="px-3 py-1 rounded text-xs font-black transition flex items-center gap-1.5 bg-blue-600 text-white shadow">
-        <span>🏭</span> 日別製造・入出庫管理
-      </button>
-      <button id="navTabAnnual" onclick="switchMainTab('annual')" class="px-3 py-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5">
-        <span>📅</span> 年間計画 (S&OP)
-      </button>
-    </div>
-
-    <!-- 年月切り替え & 状態バッジ -->
-    <div class="flex items-center space-x-2">
-      <div id="headerMonthControls" class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-        <button id="btnPrevMonth" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs transition">◀</button>
-        <span id="currentYearMonthText" class="px-3 py-1 font-bold text-xs sm:text-sm tracking-wider text-white">2026年10月度</span>
-        <button id="btnNextMonth" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-700 rounded text-xs transition">▶</button>
+      <!-- 画面切替タブ -->
+      <div class="bg-slate-800 p-0.5 rounded-lg border border-slate-700 flex items-center shadow-inner">
+        <button id="tabDailyView" class="px-3 py-1 rounded-md font-bold text-xs transition flex items-center gap-1.5 bg-blue-600 text-white shadow">
+          <span>🏭</span> 日別製造・入出庫管理
+        </button>
+        <button id="tabAnnualView" class="px-3 py-1 rounded-md font-bold text-xs transition flex items-center gap-1.5 text-slate-300 hover:text-white">
+          <span>📅</span> 年間計画 (S&OP)
+        </button>
       </div>
 
-      <div id="headerYearControls" class="hidden items-center bg-slate-800 rounded-lg px-2 py-1 border border-slate-700">
-        <span class="text-xs text-slate-400 mr-1.5 font-bold">計画対象年:</span>
-        <select id="annualYearSelect" class="bg-slate-900 text-white font-black text-xs rounded px-1.5 py-0.5 outline-none border border-slate-600 cursor-pointer">
+      <!-- 日別用 年月ナビゲーション -->
+      <div id="dailyYmNav" class="flex items-center space-x-1.5 bg-slate-800 px-2.5 py-1 rounded border border-slate-700">
+        <button id="btnPrevMonth" class="text-slate-300 hover:text-white hover:bg-slate-700 px-1.5 py-0.5 rounded transition font-bold">◀</button>
+        <span id="currentYearMonthText" class="font-extrabold text-white text-xs tracking-wide">2026年10月度</span>
+        <button id="btnNextMonth" class="text-slate-300 hover:text-white hover:bg-slate-700 px-1.5 py-0.5 rounded transition font-bold">▶</button>
+      </div>
+
+      <!-- 年間計画用 年度セレクタ -->
+      <div id="annualYearNav" class="hidden items-center space-x-2 bg-slate-800 px-2.5 py-1 rounded border border-slate-700">
+        <span class="text-slate-400 font-bold text-xs">対象年度:</span>
+        <select id="annualYearSelect" class="bg-slate-900 text-white font-bold px-2 py-0.5 rounded border border-slate-600 outline-none text-xs">
           <option value="2025">2025年度</option>
           <option value="2026" selected>2026年度</option>
           <option value="2027">2027年度</option>
@@ -111,24 +128,21 @@
         </select>
       </div>
 
-      <span id="connectionBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        GAS接続中
+      <span id="connectionBadge" class="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded flex items-center gap-1">
+        ● 接続待機中
       </span>
     </div>
 
     <!-- 日別用ボタン群 -->
     <div id="dailyActionButtons" class="flex items-center space-x-2 flex-wrap">
-      <button id="btnSaveToSheet" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-        シートへ保存
-      </button>
       <button id="btnOpenStockCsvModal" class="bg-cyan-700 hover:bg-cyan-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
         <span>📦</span> 実在庫CSV取込
       </button>
       <button id="btnOpenCsvModal" class="bg-teal-700 hover:bg-teal-600 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        出庫CSV取込
+        <span>🚚</span> 出庫CSV取込
+      </button>
+      <button id="btnSaveToSheet" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3.5 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <span>💾</span> 製造・出庫を保存
       </button>
     </div>
 
@@ -136,6 +150,9 @@
     <div id="annualActionButtons" class="hidden items-center space-x-2 flex-wrap">
       <button id="btnOpenAnnualSalesCsvModal" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
         <span>📊</span> 営業販売計画CSV取込
+      </button>
+      <button id="btnCopyPrevYearSales" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
+        <span>📋</span> 前年販売計画を引用
       </button>
       <button id="btnSaveAnnualPlan" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded text-xs shadow flex items-center gap-1.5 transition active:scale-95">
         <span>💾</span> 年間計画を保存
@@ -146,18 +163,16 @@
     </div>
   </header>
 
-  <!-- ========================================== -->
-  <!-- 2. 日別製造・入出庫管理ビュー (メイン)     -->
-  <!-- ========================================== -->
-  <div id="viewDailyContainer" class="flex-1 flex flex-col overflow-hidden">
-    <!-- KPIサマリーバー (初期状態で格納) -->
+  <!-- ==================== VIEW 1: 日別製造・入出庫管理ビュー ==================== -->
+  <div id="viewDaily" class="flex-1 flex flex-col overflow-hidden">
+    <!-- KPIサマリーバー -->
     <div id="kpiBar" class="px-4 py-2 transition-all duration-200 border-b border-slate-300 bg-slate-100/90">
       <div class="flex items-center justify-between mb-1.5">
         <div id="kpiCompactSummary" class="text-xs font-bold text-slate-700 flex items-center gap-4 flex-wrap">
           <span>サマリー:</span>
           <span>製造計: <b id="compactMake" class="text-blue-700 text-sm">0</b> c/s</span>
           <span class="text-slate-400">|</span>
-          <span>目標(年間計画連動): <b id="compactTarget" class="text-slate-800 text-sm">24,860</b> c/s (<b id="compactRate" class="text-blue-600">0%</b>)</span>
+          <span>目標(年間計画連動): <b id="compactTarget" class="text-slate-800 text-sm">26,800</b> c/s (<b id="compactRate" class="text-blue-600">0%</b>)</span>
           <span class="text-slate-400">|</span>
           <span>出庫計: <b id="compactOut" class="text-amber-700 text-sm">0</b> c/s</span>
           <span class="text-slate-400">|</span>
@@ -184,7 +199,7 @@
         <div class="bg-white rounded-lg p-2.5 shadow-sm border border-slate-200 flex items-center justify-between">
           <div>
             <div class="text-[10px] text-slate-500 font-bold uppercase">年間計画月間枠 / 達成率</div>
-            <div class="text-lg font-black text-slate-800 tracking-tight" id="kpiTargetSummary">24,860 <span class="text-xs font-bold text-blue-600" id="kpiTargetRate">(0%)</span></div>
+            <div class="text-lg font-black text-slate-800 tracking-tight" id="kpiTargetSummary">26,800 <span class="text-xs font-bold text-blue-600" id="kpiTargetRate">(0%)</span></div>
           </div>
           <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">🎯</div>
         </div>
@@ -212,12 +227,6 @@
         <button id="btnPrintWeekly" class="px-2.5 py-1 rounded font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 transition flex items-center gap-1 active:scale-95" title="A4横1枚で印刷">
           <span>🖨</span> 印刷
         </button>
-        <button id="btnAutoAllocate" class="px-2.5 py-1 rounded font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition flex items-center gap-1 active:scale-95">
-          <span>📋</span> 目標から出庫を仮計算
-        </button>
-        <button id="btnClearOutputs" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
-          <span>☁</span> 出庫クリア
-        </button>
         <button id="btnReload" class="px-2.5 py-1 rounded font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1">
           <span>🔄</span> 再読込
         </button>
@@ -240,8 +249,8 @@
         </span>
       </div>
       <div class="flex items-center gap-2">
-        <span id="stockStatusBadge" class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1">
-          🔗 前月末残数を月初在庫へ自動引継中
+        <span id="stockStatusBadge" class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold border border-indigo-300 flex items-center gap-1">
+          🔗 年間計画の前月末在庫を自動引用中
         </span>
         <span class="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold border border-rose-300">
           残数赤太文字＝安全在庫割れ / 赤背景＝欠品警告
@@ -254,7 +263,8 @@
       <div class="flex items-center gap-2">
         <span class="text-rose-600 font-extrabold text-sm">⚠</span>
         <div>
-          <span class="font-black text-rose-700" id="alertBannerTitle">在庫ショート（欠品・安全在庫割れ）を検知しました</span>
+          <span class="font-black text-rose-700" id="alertBannerTitle">今日以降で在庫ショート（欠品・安全在庫割れ）を検知しました</span>
+          <div id="alertBannerProducts" class="text-[11px] font-bold text-rose-900 my-0.5"></div>
           <div class="text-[11px] text-rose-600">製造計画を前倒しで割り振ってください。</div>
         </div>
       </div>
@@ -273,17 +283,16 @@
     </main>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 3. 年間計画シミュレーションビュー (S&OP)  -->
-  <!-- ========================================== -->
-  <div id="viewAnnualContainer" class="hidden flex-1 flex flex-col overflow-hidden">
+  <!-- ==================== VIEW 2: 年間計画シミュレーションビュー ==================== -->
+  <div id="viewAnnual" class="flex-1 flex-col overflow-hidden hidden">
+    <!-- ガイダンスバー -->
     <div class="px-4 py-2 bg-indigo-50 border-b border-indigo-200 text-xs flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-3">
         <span class="font-black text-indigo-900 flex items-center gap-1.5 text-sm">
           <span>📅</span> <span id="annualYearBannerTitle">2026年度 年間販売・製造・在庫計画表</span>
         </span>
         <span class="text-slate-600 hidden md:inline">
-          営業の販売計画を取り込み、各月の「製造」予定を入力すると、右方向へ月末在庫が自動連動計算されます。
+          営業販売計画を取り込み、各月の「製造」を入力すると月末在庫が自動連動計算されます。「在庫」は直接手入力して実在庫と合わせることも可能です。
         </span>
       </div>
       <div class="flex items-center gap-3 text-[11px]">
@@ -294,8 +303,15 @@
           <span class="w-2.5 h-2.5 bg-indigo-100 border border-indigo-500 rounded-sm"></span> 製造 ＝ 工場計画枠 (手入力)
         </span>
         <span class="flex items-center gap-1 font-bold text-amber-700">
-          <span class="w-2.5 h-2.5 bg-amber-100 border border-amber-400 rounded-sm"></span> 在庫 ＝ 連動計算
+          <span class="w-2.5 h-2.5 bg-amber-100 border border-amber-400 rounded-sm"></span> 在庫 ＝ 連動計算 / 手入力修正可
         </span>
+      </div>
+    </div>
+
+    <!-- 年間計画 期間絞込ツールバー -->
+    <div class="px-4 py-2 bg-white/90 border-b border-slate-300 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center space-x-1 overflow-x-auto" id="annualPeriodTabs">
+        <!-- JSでボタンを自動生成 -->
       </div>
     </div>
 
@@ -311,7 +327,7 @@
     </main>
   </div>
 
-  <!-- 実在庫CSVモーダル (シンプル版) -->
+  <!-- モーダル: 実在庫CSV -->
   <div id="stockCsvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
@@ -339,14 +355,11 @@
     </div>
   </div>
 
-  <!-- 出庫CSVモーダル (シンプル版) -->
+  <!-- モーダル: 出庫CSV -->
   <div id="csvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
-        <h3 class="font-bold text-sm flex items-center gap-2">
-          <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          出庫CSVファイルの取込
-        </h3>
+        <h3 class="font-bold text-sm flex items-center gap-2"><span>🚚</span> 出庫CSVファイルの取込</h3>
         <button id="btnCloseCsvModal" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
       </div>
       <div class="p-4 space-y-3 text-xs">
@@ -370,7 +383,7 @@
     </div>
   </div>
 
-  <!-- 年間販売計画CSVモーダル -->
+  <!-- モーダル: 年間販売計画CSV -->
   <div id="annualSalesCsvModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-300 overflow-hidden">
       <div class="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
@@ -379,7 +392,7 @@
       </div>
       <div class="p-4 space-y-3 text-xs">
         <p class="text-slate-600 leading-relaxed">
-          営業から受領した「<span class="font-bold text-indigo-800">販売計画CSV（■20261-12月販売計画.csv）</span>」を指定してください。<br>
+          営業から受領した「販売計画CSV」を指定してください。<br>
           対象年（<span id="annualModalTargetYearText" class="font-black text-indigo-700">2026年</span>計画）の各月列を自動検知して取り込みます。
         </p>
         <div>
@@ -401,48 +414,47 @@
     </div>
   </div>
 
-  <!-- 入力アシストポップアップ -->
-  <div id="inputAssistTooltip" class="fixed pointer-events-none z-50 opacity-0 transform -translate-x-1/2 -translate-y-full transition-opacity duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-2 whitespace-nowrap border-2"></div>
-
-  <!-- トースト通知 -->
-  <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-xl text-xs flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
-    <span id="toastIcon">✔</span>
-    <span id="toastMsg">保存しました</span>
+  <!-- 入力アシストツールチップ & トースト -->
+  <div id="inputAssistTooltip" class="fixed pointer-events-none z-50 opacity-0 transition-opacity duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-2 whitespace-nowrap border-2 bg-slate-900 text-white"></div>
+  <div id="toastNotification" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-xl text-xs font-bold flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none z-50 border border-slate-700">
+    <span id="toastIcon">💾</span>
+    <span id="toastMessage">保存しました</span>
   </div>
 
-  <!-- ========================================== -->
-  <!-- 4. 全機能統合スクリプト                   -->
-  <!-- ========================================== -->
   <script>
-    // グローバル状態管理
     const APP_STATE = {
-      currentView: 'daily',
+      activeTab: 'daily',
       year: 2026,
       month: 10,
+      annualYear: 2026,
+      annualPeriod: 'all',
       daysInMonth: 31,
       currentPeriod: 'all',
       isKpiPinned: false,
       isKpiCollapsed: true,
-      annualYear: 2026,
-      realStockMapByMonth: {},
       products: [
-        { id: 1,  code: 112, name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 7200, masterInitStock: 6208, initStock: 6208, safeStock: 500 },
-        { id: 2,  code: 116, name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 60,   masterInitStock: 50,   initStock: 50,   safeStock: 20 },
-        { id: 3,  code: 23,  name: '博多純氷カチ割り1kg',   spec: '1kg×10',  packQty: 10, target: 1400, masterInitStock: 706,  initStock: 706,  safeStock: 200 },
-        { id: 4,  code: 31,  name: 'おいしい氷1kg',         spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 2015, initStock: 2015, safeStock: 300 },
-        { id: 5,  code: 163, name: 'ドンキホーテ極氷1.1kg', spec: '1.1kg×8', packQty: 10, target: 1400, masterInitStock: 2336, initStock: 2336, safeStock: 200 },
-        { id: 6,  code: 37,  name: 'ヒロキュー千年氷1kg',   spec: '1kg×10',  packQty: 10, target: 500,  masterInitStock: 200,  initStock: 200,  safeStock: 100 },
-        { id: 7,  code: 161, name: 'CGC1kg',                spec: '1kg×10',  packQty: 12, target: 1200, masterInitStock: 11,   initStock: 11,   safeStock: 300 },
-        { id: 8,  code: 52,  name: 'おいしい氷2kgチャック', spec: '2kg×5',   packQty: 6,  target: 1600, masterInitStock: 1761, initStock: 1761, safeStock: 250 },
-        { id: 9,  code: 74,  name: 'おいしい氷1.1kg',       spec: '1.1kg×8', packQty: 12, target: 3600, masterInitStock: 5975, initStock: 5975, safeStock: 600 },
-        { id: 10, code: 159, name: 'ゆめイチ1kg',           spec: '1kg×10',  packQty: 12, target: 2400, masterInitStock: 1636, initStock: 1636, safeStock: 400 },
-        { id: 11, code: 160, name: 'ゆめイチ2.1kg',         spec: '2.1kg×4', packQty: 6,  target: 4000, masterInitStock: 5829, initStock: 5829, safeStock: 600 },
-        { id: 12, code: 169, name: 'スティック40mm',        spec: '本',      packQty: 1,  target: 200,  masterInitStock: 69,   initStock: 69,   safeStock: 30 },
-        { id: 13, code: 170, name: 'スティック60mm',        spec: '本',      packQty: 1,  target: 50,   masterInitStock: 30,   initStock: 30,   safeStock: 10 },
-        { id: 14, code: 171, name: 'スティック110mm',       spec: '本',      packQty: 1,  target: 50,   masterInitStock: 40,   initStock: 40,   safeStock: 10 }
+        { id: 1,  code: 112, name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 10800, masterInitStock: 6208, initStock: 6208, safeStock: 500 },
+        { id: 2,  code: 116, name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 0,     masterInitStock: 0,    initStock: 0,    safeStock: 20 },
+        { id: 3,  code: 23,  name: '博多純氷カチ割り1kg',   spec: '1kg×10',  packQty: 10, target: 1400,  masterInitStock: 706,  initStock: 706,  safeStock: 200 },
+        { id: 4,  code: 31,  name: 'おいしい氷1kg',         spec: '1kg×10',  packQty: 12, target: 1200,  masterInitStock: 2015, initStock: 2015, safeStock: 300 },
+        { id: 5,  code: 163, name: 'ドンキホーテ極氷1.1kg', spec: '1.1kg×8', packQty: 10, target: 1400,  masterInitStock: 2336, initStock: 2336, safeStock: 200 },
+        { id: 6,  code: 37,  name: 'ヒロキュー千年氷1kg',   spec: '1kg×10',  packQty: 10, target: 0,     masterInitStock: 0,    initStock: 0,    safeStock: 100 },
+        { id: 7,  code: 161, name: 'CGC1kg',                spec: '1kg×10',  packQty: 12, target: 2400,  masterInitStock: 11,   initStock: 11,   safeStock: 300 },
+        { id: 8,  code: 52,  name: 'おいしい氷2kgチャック', spec: '2kg×5',   packQty: 6,  target: 1600,  masterInitStock: 1761, initStock: 1761, safeStock: 250 },
+        { id: 9,  code: 74,  name: 'おいしい氷1.1kg',       spec: '1.1kg×8', packQty: 12, target: 3600,  masterInitStock: 5975, initStock: 5975, safeStock: 600 },
+        { id: 10, code: 159, name: 'ゆめイチ1kg',           spec: '1kg×10',  packQty: 12, target: 2400,  masterInitStock: 1636, initStock: 1636, safeStock: 400 },
+        { id: 11, code: 160, name: 'ゆめイチ2.1kg',         spec: '2.1kg×4', packQty: 6,  target: 2000,  masterInitStock: 5829, initStock: 5829, safeStock: 600 },
+        { id: 12, code: 169, name: 'スティック40mm',        spec: '本',      packQty: 1,  target: 0,     masterInitStock: 0,    initStock: 0,    safeStock: 30 },
+        { id: 13, code: 170, name: 'スティック60mm',        spec: '本',      packQty: 1,  target: 0,     masterInitStock: 0,    initStock: 0,    safeStock: 10 },
+        { id: 14, code: 171, name: 'スティック110mm',       spec: '本',      packQty: 1,  target: 0,     masterInitStock: 0,    initStock: 0,    safeStock: 10 }
       ],
       matrix: {},
-      annualMatrix: {}
+      annualMatrix: {},
+      annualInitStocks: {},
+      realStockMapByMonth: {},
+      _tempStockResult: null,
+      _tempCsvOuts: null,
+      _tempAnnualSales: null
     };
 
     function getYmKey(y, m) { return `${y}-${String(m).padStart(2, '0')}`; }
@@ -454,75 +466,19 @@
       return isNaN(n) ? 0 : n;
     }
 
-    function showToast(msg, icon = '✔') {
-      const toast = document.getElementById('toast');
-      document.getElementById('toastMsg').textContent = msg;
+    function showToast(msg, icon = '✅') {
+      const toast = document.getElementById('toastNotification');
+      if (!toast) return;
       document.getElementById('toastIcon').textContent = icon;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+      document.getElementById('toastMessage').textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3000);
     }
 
-    function hideInputAssistTooltip() {
-      const tooltip = document.getElementById('inputAssistTooltip');
-      if (tooltip) {
-        tooltip.classList.remove('opacity-100');
-        tooltip.classList.add('opacity-0');
-      }
-      const activeBadge = document.getElementById('activeEditingBadge');
-      if (activeBadge) {
-        activeBadge.classList.add('hidden');
-        activeBadge.classList.remove('inline-flex');
-      }
-      document.querySelectorAll('#tableBody tr td.sticky-col-1').forEach(td => {
-        td.classList.remove('ring-2', 'ring-blue-600', 'ring-inset', 'font-black');
-      });
-    }
-
-    // 画面切り替えタブ処理
-    function switchMainTab(targetView) {
-      const tabDaily = document.getElementById('navTabDaily');
-      const tabAnnual = document.getElementById('navTabAnnual');
-      const viewDaily = document.getElementById('viewDailyContainer');
-      const viewAnnual = document.getElementById('viewAnnualContainer');
-      const headerMonth = document.getElementById('headerMonthControls');
-      const headerYear = document.getElementById('headerYearControls');
-      const dailyBtns = document.getElementById('dailyActionButtons');
-      const annualBtns = document.getElementById('annualActionButtons');
-
-      if (targetView === 'daily') {
-        APP_STATE.currentView = 'daily';
-        tabDaily.className = 'px-3 py-1 rounded text-xs font-black transition flex items-center gap-1.5 bg-blue-600 text-white shadow';
-        tabAnnual.className = 'px-3 py-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5';
-        viewDaily.classList.remove('hidden');
-        viewAnnual.classList.add('hidden');
-        headerMonth.classList.remove('hidden');
-        headerYear.classList.add('hidden');
-        dailyBtns.classList.remove('hidden');
-        dailyBtns.classList.add('flex');
-        annualBtns.classList.add('hidden');
-        annualBtns.classList.remove('flex');
-
-        updateInitialStocksForCurrentMonth();
-        renderTable();
-      } else {
-        APP_STATE.currentView = 'annual';
-        tabAnnual.className = 'px-3 py-1 rounded text-xs font-black transition flex items-center gap-1.5 bg-indigo-600 text-white shadow';
-        tabDaily.className = 'px-3 py-1 rounded text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 transition flex items-center gap-1.5';
-        viewDaily.classList.add('hidden');
-        viewAnnual.classList.remove('hidden');
-        headerMonth.classList.add('hidden');
-        headerYear.classList.remove('hidden');
-        headerYear.classList.add('flex');
-        dailyBtns.classList.add('hidden');
-        dailyBtns.classList.remove('flex');
-        annualBtns.classList.remove('hidden');
-        annualBtns.classList.add('flex');
-
-        renderAnnualTable();
-      }
-    }
-
-    // 日別マトリクス初期化
     function initMatrix() {
       APP_STATE.daysInMonth = new Date(APP_STATE.year, APP_STATE.month, 0).getDate();
       APP_STATE.matrix = {};
@@ -535,26 +491,93 @@
       updateInitialStocksForCurrentMonth();
     }
 
+    function initAnnualMatrix(targetYear) {
+      if (!APP_STATE.annualMatrix[targetYear]) {
+        APP_STATE.annualMatrix[targetYear] = {};
+        APP_STATE.products.forEach(p => {
+          APP_STATE.annualMatrix[targetYear][p.id] = {};
+          for (let m = 1; m <= 12; m++) {
+            APP_STATE.annualMatrix[targetYear][p.id][m] = { sales: 0, make: 0, customStock: null };
+          }
+        });
+
+        // プレビュー環境用のリアルな目標製造枠と9月末在庫の初期モック
+        if (targetYear === 2026) {
+          const defaultMakes = { 1: 10800, 2: 0, 3: 1400, 4: 1200, 5: 1400, 6: 0, 7: 2400, 8: 1600, 9: 3600, 10: 2400, 11: 2000, 12: 0, 13: 0, 14: 0 };
+          const default9thStock = { 1: 6208, 2: 0, 3: 706, 4: 2015, 5: 2336, 6: 0, 7: 11, 8: 1761, 9: 5975, 10: 1636, 11: 5829, 12: 0, 13: 0, 14: 0 };
+          APP_STATE.products.forEach(p => {
+            APP_STATE.annualMatrix[2026][p.id][10].make = defaultMakes[p.id] || 0;
+            APP_STATE.annualMatrix[2026][p.id][9].customStock = (default9thStock[p.id] !== undefined) ? default9thStock[p.id] : 0;
+          });
+        }
+      }
+      if (!APP_STATE.annualInitStocks[targetYear]) {
+        APP_STATE.annualInitStocks[targetYear] = {};
+        APP_STATE.products.forEach(p => {
+          APP_STATE.annualInitStocks[targetYear][p.id] = (p.masterInitStock || 0);
+        });
+      }
+    }
+
+    function getAnnualEndStock(year, targetMonth, productId) {
+      initAnnualMatrix(year);
+      const data = APP_STATE.annualMatrix[year];
+      const initStockMap = APP_STATE.annualInitStocks[year] || {};
+      const p = APP_STATE.products.find(prod => prod.id === productId);
+      if (!p) return 0;
+
+      const initStockVal = (initStockMap[productId] !== undefined) ? initStockMap[productId] : (p.masterInitStock || 0);
+      if (targetMonth <= 0) return initStockVal;
+
+      let runningStock = initStockVal;
+      for (let m = 1; m <= targetMonth && m <= 12; m++) {
+        const sVal = data?.[productId]?.[m]?.sales || 0;
+        const mVal = data?.[productId]?.[m]?.make || 0;
+        const autoStock = runningStock + mVal - sVal;
+        const cStock = data?.[productId]?.[m]?.customStock;
+        const isCustom = (cStock !== undefined && cStock !== null && cStock !== '');
+        runningStock = isCustom ? Number(cStock) : autoStock;
+      }
+      return runningStock;
+    }
+
+    function syncNextYearFromPrevYear(targetYear) {
+      const prevYear = targetYear - 1;
+      initAnnualMatrix(targetYear);
+      initAnnualMatrix(prevYear);
+      if (!APP_STATE.annualInitStocks[targetYear]) APP_STATE.annualInitStocks[targetYear] = {};
+      APP_STATE.products.forEach(p => {
+        const prev12Stock = getAnnualEndStock(prevYear, 12, p.id);
+        if (APP_STATE.annualInitStocks[targetYear][p.id] === undefined || APP_STATE.annualInitStocks[targetYear][p.id] === (p.masterInitStock || 0)) {
+          if (prev12Stock !== undefined) {
+            APP_STATE.annualInitStocks[targetYear][p.id] = prev12Stock;
+          }
+        }
+      });
+    }
+
     function updateInitialStocksForCurrentMonth() {
       const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
-      const isConfirmed = !!(APP_STATE.realStockMapByMonth[ymKey]);
+      const confMap = APP_STATE.realStockMapByMonth[ymKey];
+      const isConfirmed = !!(confMap && Object.keys(confMap).length > 0 && Object.values(confMap).some(v => v !== undefined && v !== null && v !== ''));
 
       if (isConfirmed) {
-        const confMap = APP_STATE.realStockMapByMonth[ymKey];
         APP_STATE.products.forEach(p => {
           if (confMap[p.id] !== undefined) p.initStock = confMap[p.id];
         });
       } else {
-        APP_STATE.products.forEach(p => { p.initStock = p.masterInitStock; });
+        const prevM = APP_STATE.month - 1;
+        APP_STATE.products.forEach(p => {
+          p.initStock = getAnnualEndStock(APP_STATE.year, prevM, p.id);
+        });
       }
 
-      // 年間計画の該当月製造枠があれば、日別の目標値へ反映
       const annualY = APP_STATE.year;
       const annualM = APP_STATE.month;
       if (APP_STATE.annualMatrix[annualY]) {
         APP_STATE.products.forEach(p => {
           const planMake = APP_STATE.annualMatrix[annualY][p.id]?.[annualM]?.make;
-          if (planMake !== undefined && planMake > 0) p.target = planMake;
+          if (planMake !== undefined) p.target = planMake;
         });
       }
 
@@ -564,8 +587,9 @@
           statusBadge.className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-300 flex items-center gap-1';
           statusBadge.innerHTML = `✅ ${APP_STATE.month}月度は在庫報告書CSVから確定実在庫を反映中`;
         } else {
-          statusBadge.className = 'text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold border border-amber-300 flex items-center gap-1';
-          statusBadge.innerHTML = `⚠️ 前月末残数を月初仮在庫へ自動引継中（実在庫CSV取込可）`;
+          const refText = (APP_STATE.month === 1) ? '年間計画(前年末在庫)' : `年間計画(${APP_STATE.month - 1}月末在庫)`;
+          statusBadge.className = 'text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold border border-indigo-300 flex items-center gap-1';
+          statusBadge.innerHTML = `🔗 ${refText}を月初在庫へ自動引用中`;
         }
       }
     }
@@ -639,7 +663,54 @@
       });
     }
 
-    // 日別テーブル描画
+    function getDisplayAnnualMonths() {
+      if (APP_STATE.annualPeriod === '1-4') return [1, 2, 3, 4];
+      if (APP_STATE.annualPeriod === '5-9') return [5, 6, 7, 8, 9];
+      if (APP_STATE.annualPeriod === '10-12') return [10, 11, 12];
+      return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    }
+
+    function renderAnnualPeriodTabs() {
+      const container = document.getElementById('annualPeriodTabs');
+      if (!container) return;
+      const periods = [
+        { id: '1-4', label: '1〜4月' },
+        { id: '5-9', label: '5〜9月' },
+        { id: '10-12', label: '10〜12月' },
+        { id: 'all', label: '全月一覧 (1〜12月)' }
+      ];
+      let html = `<span class="text-slate-500 font-bold text-[11px] mr-1 flex items-center gap-1 shrink-0">表示期間:</span>`;
+      periods.forEach(p => {
+        const active = (APP_STATE.annualPeriod === p.id);
+        const cls = active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+        html += `<button data-aperiod="${p.id}" class="annual-period-btn px-2.5 py-1 rounded font-bold text-[11px] ${cls} transition active:scale-95 shrink-0 whitespace-nowrap">${p.label}</button>`;
+      });
+      container.innerHTML = html;
+      container.querySelectorAll('.annual-period-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          APP_STATE.annualPeriod = this.dataset.aperiod;
+          renderAnnualPeriodTabs();
+          renderAnnualTable();
+        });
+      });
+    }
+
+    function hideInputAssistTooltip() {
+      const tooltip = document.getElementById('inputAssistTooltip');
+      if (tooltip) {
+        tooltip.classList.remove('opacity-100');
+        tooltip.classList.add('opacity-0');
+      }
+      const activeBadge = document.getElementById('activeEditingBadge');
+      if (activeBadge) {
+        activeBadge.classList.add('hidden');
+        activeBadge.classList.remove('inline-flex');
+      }
+      document.querySelectorAll('#tableBody tr td.sticky-col-1, #annualTableBody tr td.annual-sticky-col-1').forEach(td => {
+        td.classList.remove('ring-2', 'ring-blue-600', 'ring-indigo-600', 'ring-inset', 'font-black');
+      });
+    }
+
     function renderTable() {
       hideInputAssistTooltip();
       const days = getDisplayDays();
@@ -648,19 +719,27 @@
       const tfoot = document.getElementById('tableFoot');
 
       const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
-      const isConfirmed = !!(APP_STATE.realStockMapByMonth[ymKey]);
+      const confMap = APP_STATE.realStockMapByMonth[ymKey];
+      const isConfirmed = !!(confMap && Object.keys(confMap).length > 0 && Object.values(confMap).some(v => v !== undefined && v !== null && v !== ''));
+      const refMonthText = (APP_STATE.month === 1) ? '前年末' : `${APP_STATE.month - 1}月末`;
       const stockBadgeHtml = isConfirmed
         ? `<div class="text-[9px] text-emerald-400 font-bold leading-tight">実在庫(確定)</div>`
-        : `<div class="text-[9px] text-amber-400 font-bold leading-tight">仮在庫(引継)</div>`;
+        : `<div class="text-[9px] text-indigo-300 font-bold leading-tight">年間計画連動(${refMonthText})</div>`;
 
       const dayOfWeekStr = ['日', '月', '火', '水', '木', '金', '土'];
+      const realToday = new Date();
+      const isCurYearMonth = (realToday.getFullYear() === APP_STATE.year && (realToday.getMonth() + 1) === APP_STATE.month);
+      const todayDateNum = realToday.getDate();
+
+      // ヘッダー行1（完全不透明の固定3列: 品目名=150px, 製造予定=80px, 累計製造=80px）
       let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
-        <th rowspan="2" class="sticky-corner-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[140px] min-w-[140px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">品目名</th>
-        <th rowspan="2" class="th-date-header bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-slate-200 w-[65px] min-w-[65px] border-r border-b border-slate-600">
+        <th rowspan="2" class="sticky-corner-1 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[150px] min-w-[150px] max-w-[150px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]" style="position:sticky;left:0px;z-index:45;background-color:#1e293b!important;">品目名</th>
+        <th rowspan="2" class="sticky-corner-2 text-right px-2 py-1 text-xs font-bold text-indigo-300 w-[80px] min-w-[80px] max-w-[80px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]" style="position:sticky;left:150px;z-index:45;background-color:#1e293b!important;">製造予定</th>
+        <th rowspan="2" class="sticky-corner-3 text-right px-2 py-1 text-xs font-bold text-blue-300 w-[80px] min-w-[80px] max-w-[80px] border-r-2 border-b border-slate-500 shadow-[3px_0_4px_-1px_rgba(0,0,0,0.4)]" style="position:sticky;left:230px;z-index:45;background-color:#1e293b!important;">累計製造</th>
+        <th rowspan="2" class="bg-slate-800 text-right px-2 py-1 text-xs font-bold text-amber-300 w-[75px] min-w-[75px] border-r border-b border-slate-600">累計出庫数</th>
+        <th rowspan="2" class="bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-slate-200 w-[75px] min-w-[75px] border-r border-b border-slate-600">
           <div>月初在庫</div>${stockBadgeHtml}
-        </th>
-        <th rowspan="2" class="th-date-header bg-slate-800 text-right px-2 py-1 text-xs font-bold text-blue-300 w-[65px] min-w-[65px] border-r border-b border-slate-600">累計製造</th>
-        <th rowspan="2" class="th-date-header bg-slate-800 text-right px-2 py-1 text-xs font-bold text-amber-300 w-[65px] min-w-[65px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">累計出庫</th>`;
+        </th>`;
 
       days.forEach(dayInfo => {
         let dayClass = 'bg-slate-800 text-slate-100';
@@ -668,17 +747,21 @@
         else if (dayInfo.dow === 6) dayClass = 'bg-blue-900/95 text-blue-100 font-extrabold';
         if (!dayInfo.isCurrentMonth) dayClass = 'bg-slate-700/80 text-slate-400 font-medium';
 
-        h1 += `<th colspan="3" class="th-date-header ${dayClass} text-center py-1 px-1 border-r border-b border-slate-600 w-[140px] min-w-[140px]">
-          <span class="text-[11px] tracking-wide">${dayInfo.month}/${dayInfo.day} (${dayOfWeekStr[dayInfo.dow]})</span>
+        const isTodayCell = isCurYearMonth && dayInfo.isCurrentMonth && (dayInfo.day === todayDateNum);
+        const todayBadge = isTodayCell ? `<span class="ml-1 bg-amber-400 text-slate-900 text-[9px] px-1 rounded font-black animate-pulse">本日</span>` : '';
+
+        h1 += `<th colspan="3" class="th-date-header ${dayClass} text-center py-1 px-1 border-r border-b border-slate-600 w-[164px] min-w-[164px]">
+          <span class="text-[11px] tracking-wide">${dayInfo.month}/${dayInfo.day} (${dayOfWeekStr[dayInfo.dow]})${todayBadge}</span>
         </th>`;
       });
       h1 += `</tr>`;
 
+      // ヘッダー行2（日別列の幅を拡幅して文字欠け・見切れを根絶: 製造=52px, 出庫=52px, 残数=60px）
       let h2 = `<tr class="divide-x divide-slate-600 text-[10px] bg-slate-900 text-slate-300 h-[24px]">`;
       days.forEach(dayInfo => {
-        h2 += `<th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] bg-slate-900 text-blue-300 border-b border-slate-700">製造</th>
-               <th class="th-sub-header text-center py-0.5 font-bold w-[44px] min-w-[44px] bg-slate-900 text-amber-300 border-b border-slate-700">出庫</th>
-               <th class="th-sub-header text-center py-0.5 font-bold w-[52px] min-w-[52px] bg-slate-900 text-slate-200 border-r border-slate-600 border-b border-slate-700">残数</th>`;
+        h2 += `<th class="th-sub-header text-center py-0.5 font-bold w-[52px] min-w-[52px] bg-slate-900 text-blue-300 border-b border-slate-700">製造</th>
+               <th class="th-sub-header text-center py-0.5 font-bold w-[52px] min-w-[52px] bg-slate-900 text-amber-300 border-b border-slate-700">出庫</th>
+               <th class="th-sub-header text-center py-0.5 font-bold w-[60px] min-w-[60px] bg-slate-900 text-slate-200 border-r border-slate-600 border-b border-slate-700">残数</th>`;
       });
       h2 += `</tr>`;
       thead.innerHTML = h1 + h2;
@@ -688,20 +771,35 @@
       let monthlyTotalOut = 0;
       let monthlyTotalTarget = 0;
       let totalShortAlerts = 0;
+      const shortProductNames = [];
 
       const dayTotals = {};
       for (let d = 1; d <= APP_STATE.daysInMonth; d++) dayTotals[d] = { make: 0, out: 0 };
 
+      let alertStartDay = 1;
+      let checkAlerts = true;
+      if (APP_STATE.year < realToday.getFullYear() || (APP_STATE.year === realToday.getFullYear() && APP_STATE.month < (realToday.getMonth() + 1))) {
+        checkAlerts = false;
+      } else if (isCurYearMonth) {
+        alertStartDay = todayDateNum;
+      }
+
       APP_STATE.products.forEach((p, rowIdx) => {
-        monthlyTotalTarget += (p.target || 0);
+        const annualPlanMake = APP_STATE.annualMatrix[APP_STATE.year]?.[p.id]?.[APP_STATE.month]?.make;
+        const displayTarget = (annualPlanMake !== undefined) ? annualPlanMake : (p.target || 0);
+        monthlyTotalTarget += displayTarget;
+
         let curStock = p.initStock || 0;
         let pMakeSum = 0;
         let pOutSum = 0;
-        let rowHasShort = false;
+        let rowHasShortTodayOrFuture = false;
 
         const isEven = (rowIdx % 2 === 1);
-        const rowBgClass = isEven ? 'bg-slate-50/90' : 'bg-white';
-        const fixedColBg = isEven ? 'bg-slate-100' : 'bg-slate-50';
+        const rowClass = isEven ? 'even-row bg-slate-50' : 'bg-white';
+        // 100%完全不透明なカラーコードを指定（アルファ値透過の重なりを完全防止）
+        const fixedCol1Bg = isEven ? '#f8fafc' : '#ffffff';
+        const fixedCol2Bg = isEven ? '#e2e8f0' : '#f1f5f9';
+        const fixedCol3Bg = isEven ? '#f1f5f9' : '#f8fafc';
 
         const dailyStockMap = {};
         for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
@@ -714,10 +812,16 @@
 
           curStock = curStock + makeVal - outVal;
           dailyStockMap[d] = curStock;
-          if (curStock < p.safeStock) rowHasShort = true;
+
+          if (checkAlerts && d >= alertStartDay && curStock < p.safeStock) {
+            rowHasShortTodayOrFuture = true;
+          }
         }
 
-        if (rowHasShort) totalShortAlerts++;
+        if (rowHasShortTodayOrFuture) {
+          totalShortAlerts++;
+          shortProductNames.push(p.name);
+        }
         monthlyTotalMake += pMakeSum;
         monthlyTotalOut += pOutSum;
 
@@ -725,9 +829,9 @@
         days.forEach(dayInfo => {
           if (!dayInfo.isCurrentMonth) {
             dayCells += `
-              <td class="p-0 text-center w-[44px] min-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
-              <td class="p-0 text-center w-[44px] min-w-[44px] bg-slate-100/70 text-slate-400 font-bold select-none">-</td>
-              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] border-r border-slate-300 bg-slate-50 text-slate-400 font-medium select-none">-</td>`;
+              <td class="p-0 text-center w-[52px] min-w-[52px] bg-slate-100 text-slate-400 font-bold select-none">-</td>
+              <td class="p-0 text-center w-[52px] min-w-[52px] bg-slate-100 text-slate-400 font-bold select-none">-</td>
+              <td class="text-right px-1.5 py-1 text-xs w-[60px] min-w-[60px] border-r border-slate-300 bg-slate-100 text-slate-400 font-medium select-none">-</td>`;
           } else {
             const d = dayInfo.day;
             const makeVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
@@ -736,63 +840,71 @@
 
             let stockStyle = 'text-slate-800 font-semibold';
             if (stockVal < 0) {
-              stockStyle = 'bg-rose-600 text-white font-black px-1 rounded shadow-sm';
+              stockStyle = 'bg-rose-600 text-white font-black px-1.5 py-0.5 rounded shadow-sm';
             } else if (stockVal < p.safeStock) {
-              stockStyle = 'text-rose-600 font-black bg-rose-50 border border-rose-300 px-1 rounded shadow-sm';
+              stockStyle = 'text-rose-600 font-black bg-rose-50 border border-rose-300 px-1 py-0.5 rounded shadow-sm';
             }
 
             dayCells += `
-              <td class="p-0 text-center w-[44px] min-w-[44px] bg-blue-50/25">
+              <td class="p-0 text-center w-[52px] min-w-[52px] bg-blue-50/20">
                 <input type="number" min="0" step="1" value="${makeVal > 0 ? makeVal : ''}" placeholder="-"
                   data-pid="${p.id}" data-day="${d}" data-type="make"
                   class="make-input w-full h-7 text-center font-bold text-blue-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-blue-600 text-xs px-0.5 transition">
               </td>
-              <td class="p-0 text-center w-[44px] min-w-[44px] bg-amber-50/25">
+              <td class="p-0 text-center w-[52px] min-w-[52px] bg-amber-50/20">
                 <input type="number" min="0" step="1" value="${outVal > 0 ? outVal : ''}" placeholder="-"
                   data-pid="${p.id}" data-day="${d}" data-type="out"
                   class="out-input w-full h-7 text-center font-bold text-amber-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-amber-600 text-xs px-0.5 transition">
               </td>
-              <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] border-r border-slate-300">
+              <td class="text-right px-1.5 py-1 text-xs w-[60px] min-w-[60px] border-r border-slate-300">
                 <span class="${stockStyle} block text-right">${stockVal.toLocaleString()}</span>
               </td>`;
           }
         });
 
-        bHtml += `<tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-blue-50/60 transition" id="row-p-${p.id}">
-          <td class="sticky-col-1 ${fixedColBg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]">
-            <div class="truncate max-w-[130px] font-bold" title="${p.name}">${p.name}</div>
+        bHtml += `<tr class="divide-x divide-slate-300 ${rowClass} transition" id="row-p-${p.id}">
+          <td class="sticky-col-1 px-2 py-1.5 text-xs font-bold text-slate-800 border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)] w-[150px] min-w-[150px] max-w-[150px]" style="position:sticky;left:0px;z-index:20;background-color:${fixedCol1Bg}!important;">
+            <div class="truncate max-w-[140px] font-bold" title="${p.name}">${p.name}</div>
             <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''} <span class="text-slate-600 font-medium">入:${p.packQty || 1}</span></div>
           </td>
-          <td class="px-2 py-1.5 text-right font-black text-slate-700 text-xs border-r border-slate-300 bg-slate-50">${(p.initStock || 0).toLocaleString()}</td>
-          <td class="px-2 py-1.5 text-right font-black text-blue-700 text-xs border-r border-slate-300 bg-blue-50/20">${pMakeSum.toLocaleString()}</td>
-          <td class="px-2 py-1.5 text-right font-black text-amber-700 text-xs border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] bg-amber-50/20">${pOutSum.toLocaleString()}</td>
+          <td class="sticky-col-2 px-2 py-1.5 text-right font-black text-indigo-700 text-xs border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)] w-[80px] min-w-[80px] max-w-[80px]" style="position:sticky;left:150px;z-index:20;background-color:${fixedCol2Bg}!important;">
+            ${displayTarget > 0 ? displayTarget.toLocaleString() : '<span class="text-slate-400 font-normal">-</span>'}
+          </td>
+          <td class="sticky-col-3 px-2 py-1.5 text-right font-black text-blue-700 text-xs border-r-2 border-slate-400 shadow-[3px_0_4px_-1px_rgba(0,0,0,0.15)] w-[80px] min-w-[80px] max-w-[80px]" style="position:sticky;left:230px;z-index:20;background-color:${fixedCol3Bg}!important;">
+            ${pMakeSum.toLocaleString()}
+          </td>
+          <td class="px-2 py-1.5 text-right font-black text-amber-700 text-xs border-r border-slate-300 bg-amber-50/20 w-[75px] min-w-[75px]">${pOutSum.toLocaleString()}</td>
+          <td class="px-2 py-1.5 text-right font-black text-slate-700 text-xs border-r border-slate-300 bg-slate-50 w-[75px] min-w-[75px]">${(p.initStock || 0).toLocaleString()}</td>
           ${dayCells}
         </tr>`;
       });
       tbody.innerHTML = bHtml;
 
+      // フッター行
       let fHtml = `<tr class="divide-x divide-slate-400 text-xs text-slate-900 bg-slate-200">
-        <td class="sticky-col-1 bg-slate-300 px-2 py-2 font-black text-slate-900 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)]">日別合計</td>
-        <td class="bg-slate-300 border-r border-slate-400"></td>
-        <td class="bg-slate-300 text-right px-2 py-2 text-blue-800 font-black border-r border-slate-400">${monthlyTotalMake.toLocaleString()}</td>
-        <td class="bg-slate-300 text-right px-2 py-2 text-amber-800 font-black border-r-2 border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">${monthlyTotalOut.toLocaleString()}</td>`;
+        <td class="sticky-col-1 px-2 py-2 font-black text-slate-900 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)] w-[150px] min-w-[150px] max-w-[150px]" style="position:sticky;left:0px;z-index:20;background-color:#cbd5e1!important;">日別合計</td>
+        <td class="sticky-col-2 text-right px-2 py-2 text-indigo-900 font-black border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)] w-[80px] min-w-[80px] max-w-[80px]" style="position:sticky;left:150px;z-index:20;background-color:#c7d2fe!important;">${monthlyTotalTarget.toLocaleString()}</td>
+        <td class="sticky-col-3 text-right px-2 py-2 text-blue-800 font-black border-r-2 border-slate-500 shadow-[3px_0_4px_-1px_rgba(0,0,0,0.15)] w-[80px] min-w-[80px] max-w-[80px]" style="position:sticky;left:230px;z-index:20;background-color:#bfdbfe!important;">${monthlyTotalMake.toLocaleString()}</td>
+        <td class="text-right px-2 py-2 text-amber-800 font-black border-r border-slate-400 bg-amber-100/50 w-[75px] min-w-[75px]">${monthlyTotalOut.toLocaleString()}</td>
+        <td class="border-r border-slate-400 bg-slate-200 w-[75px] min-w-[75px]"></td>`;
 
       days.forEach(dayInfo => {
         if (!dayInfo.isCurrentMonth) {
-          fHtml += `<td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
-                    <td class="text-center py-2 font-black text-slate-400 bg-slate-200">-</td>
-                    <td class="border-r border-slate-400 bg-slate-200"></td>`;
+          fHtml += `<td class="text-center py-2 font-black text-slate-400 bg-slate-200 w-[52px] min-w-[52px]">-</td>
+                    <td class="text-center py-2 font-black text-slate-400 bg-slate-200 w-[52px] min-w-[52px]">-</td>
+                    <td class="border-r border-slate-400 bg-slate-200 w-[60px] min-w-[60px]"></td>`;
         } else {
           const mSum = dayTotals[dayInfo.day].make;
           const oSum = dayTotals[dayInfo.day].out;
-          fHtml += `<td class="text-center py-2 font-black text-blue-800 bg-blue-100/60">${mSum > 0 ? mSum.toLocaleString() : '-'}</td>
-                    <td class="text-center py-2 font-black text-amber-800 bg-amber-100/60">${oSum > 0 ? oSum.toLocaleString() : '-'}</td>
-                    <td class="border-r border-slate-400 bg-slate-200"></td>`;
+          fHtml += `<td class="text-center py-2 font-black text-blue-800 bg-blue-100/60 w-[52px] min-w-[52px]">${mSum > 0 ? mSum.toLocaleString() : '-'}</td>
+                    <td class="text-center py-2 font-black text-amber-800 bg-amber-100/60 w-[52px] min-w-[52px]">${oSum > 0 ? oSum.toLocaleString() : '-'}</td>
+                    <td class="border-r border-slate-400 bg-slate-200 w-[60px] min-w-[60px]"></td>`;
         }
       });
       fHtml += `</tr>`;
       tfoot.innerHTML = fHtml;
 
+      // KPI表示更新
       document.getElementById('kpiTotalMake').innerHTML = `${monthlyTotalMake.toLocaleString()} <span class="text-xs font-normal text-slate-500">c/s</span>`;
       document.getElementById('compactMake').textContent = monthlyTotalMake.toLocaleString();
 
@@ -817,7 +929,11 @@
         compactShort.textContent = totalShortAlerts;
         compactShort.className = 'text-rose-600 text-sm font-black';
         banner.classList.remove('hidden');
-        document.getElementById('alertBannerTitle').textContent = `${totalShortAlerts}品目で在庫ショート（欠品・安全在庫割れ）を検知しました`;
+        document.getElementById('alertBannerTitle').textContent = `今日以降で${totalShortAlerts}品目の在庫ショート（欠品・安全在庫割れ）を検知しました`;
+        const prodBannerEl = document.getElementById('alertBannerProducts');
+        if (prodBannerEl) {
+          prodBannerEl.innerHTML = `対象品目: <span class="underline decoration-rose-400 font-black text-rose-950">${shortProductNames.join('、')}</span>`;
+        }
       } else {
         alertCardCount.className = 'text-lg font-black text-emerald-600 tracking-tight';
         alertCardCount.innerHTML = `0 <span class="text-xs font-normal text-slate-500">件</span>`;
@@ -831,13 +947,162 @@
       attachInputEvents();
     }
 
+    function renderAnnualTable() {
+      const thead = document.getElementById('annualTableHead');
+      const tbody = document.getElementById('annualTableBody');
+      const tfoot = document.getElementById('annualTableFoot');
+      const year = APP_STATE.annualYear;
+
+      initAnnualMatrix(year);
+      const data = APP_STATE.annualMatrix[year];
+      const initStockMap = APP_STATE.annualInitStocks[year] || {};
+      const displayMonths = getDisplayAnnualMonths();
+
+      let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
+        <th rowspan="2" class="annual-sticky-th-1 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[150px] min-w-[150px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]" style="position:sticky;left:0px;z-index:45;background-color:#1e293b!important;">品目名</th>
+        <th rowspan="2" class="annual-sticky-th-2 text-center px-1 py-1 text-[11px] font-bold text-slate-300 w-[50px] min-w-[50px] border-r border-b border-slate-600 shadow-[1px_0_0_0_rgba(71,85,105,1)]" style="position:sticky;left:150px;z-index:45;background-color:#1e293b!important;">入数</th>
+        <th rowspan="2" class="annual-sticky-th-3 text-right px-1 py-1 text-[11px] font-bold text-amber-300 w-[70px] min-w-[70px] border-r-2 border-b border-slate-500 shadow-[3px_0_4px_-1px_rgba(0,0,0,0.4)]" style="position:sticky;left:200px;z-index:45;background-color:#1e293b!important;">前月末在庫</th>`;
+
+      displayMonths.forEach(m => {
+        h1 += `<th colspan="3" class="annual-th-top bg-slate-800 text-center py-1 px-1 border-r border-b border-slate-600 w-[156px] min-w-[156px]">
+          <span class="text-xs font-black tracking-wider text-slate-100">${m}月度</span>
+        </th>`;
+      });
+      h1 += `<th colspan="2" class="annual-th-top bg-indigo-950 text-center py-1 px-1 border-b border-slate-600 w-[140px] min-w-[140px]">
+        <span class="text-xs font-black tracking-wider text-indigo-200">年間合計</span>
+      </th></tr>`;
+
+      let h2 = `<tr class="divide-x divide-slate-600 text-[10px] bg-slate-900 text-slate-300 h-[24px]">`;
+      displayMonths.forEach(m => {
+        h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[50px] bg-blue-950 text-blue-200 border-b border-slate-700">販売</th>
+               <th class="annual-th-sub text-center py-0.5 font-bold w-[52px] bg-indigo-950 text-indigo-200 border-b border-slate-700">製造</th>
+               <th class="annual-th-sub text-center py-0.5 font-bold w-[54px] bg-amber-950 text-amber-200 border-r border-slate-600 border-b border-slate-700">在庫</th>`;
+      });
+      h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[70px] bg-slate-900 text-blue-200 border-b border-slate-700">販売計</th>
+             <th class="annual-th-sub text-center py-0.5 font-bold w-[70px] bg-slate-900 text-indigo-200 border-b border-slate-700">製造計</th></tr>`;
+      thead.innerHTML = h1 + h2;
+
+      let bHtml = '';
+      const monthlyTotalSales = new Array(13).fill(0);
+      const monthlyTotalMake = new Array(13).fill(0);
+      const monthlyTotalEndStock = new Array(13).fill(0);
+      let grandInitStock = 0;
+
+      APP_STATE.products.forEach((p, rowIdx) => {
+        const isEven = (rowIdx % 2 === 1);
+        const rowBgClass = isEven ? 'even-row bg-slate-50' : 'bg-white';
+        const fixedCol1Bg = isEven ? '#f8fafc' : '#ffffff';
+        const fixedCol2Bg = isEven ? '#f8fafc' : '#ffffff';
+        const fixedCol3Bg = isEven ? '#fef3c7' : '#fffbeb';
+
+        let annualProdSalesSum = 0;
+        let annualProdMakeSum = 0;
+
+        const currentInitStock = (initStockMap[p.id] !== undefined) ? initStockMap[p.id] : (p.masterInitStock || 0);
+        grandInitStock += currentInitStock;
+        let runningStock = currentInitStock;
+
+        let monthCells = '';
+        for (let m = 1; m <= 12; m++) {
+          const sVal = data[p.id]?.[m]?.sales || 0;
+          const mVal = data[p.id]?.[m]?.make || 0;
+          annualProdSalesSum += sVal;
+          annualProdMakeSum += mVal;
+          monthlyTotalSales[m] += sVal;
+          monthlyTotalMake[m] += mVal;
+
+          const autoStock = runningStock + mVal - sVal;
+          const customStockVal = data[p.id]?.[m]?.customStock;
+          const isCustom = (customStockVal !== undefined && customStockVal !== null && customStockVal !== '');
+          const finalStock = isCustom ? Number(customStockVal) : autoStock;
+          runningStock = finalStock;
+          monthlyTotalEndStock[m] += finalStock;
+
+          let stockTextClass = 'text-slate-800 font-semibold';
+          if (finalStock < 0) {
+            stockTextClass = 'bg-rose-600 text-white font-black rounded px-1';
+          } else if (finalStock < p.safeStock) {
+            stockTextClass = 'text-rose-600 font-black bg-rose-50 border border-rose-300 rounded px-1';
+          }
+
+          const customBadge = isCustom ? 'bg-amber-100 border border-amber-400 font-black text-amber-900' : '';
+
+          // 絞り込み対象の月のみセルを出力
+          if (displayMonths.includes(m)) {
+            monthCells += `
+              <td class="p-0 text-center w-[50px] min-w-[50px] bg-blue-50/20">
+                <input type="number" min="0" step="1" value="${sVal > 0 ? sVal : ''}" placeholder="-"
+                  data-apid="${p.id}" data-month="${m}" data-type="sales"
+                  class="annual-sales-input w-full h-7 text-center font-bold text-slate-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs px-0.5 transition">
+              </td>
+              <td class="p-0 text-center w-[52px] min-w-[52px] bg-indigo-50/30">
+                <input type="number" min="0" step="1" value="${mVal > 0 ? mVal : ''}" placeholder="-"
+                  data-apid="${p.id}" data-month="${m}" data-type="make"
+                  class="annual-make-input w-full h-7 text-center font-black text-indigo-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-indigo-600 text-xs px-0.5 transition">
+              </td>
+              <td class="p-0 text-center w-[54px] min-w-[54px] border-r border-slate-300 bg-amber-50/20 ${customBadge}">
+                <input type="number" step="1" value="${finalStock}" placeholder="-"
+                  data-apid="${p.id}" data-month="${m}" data-type="stock"
+                  class="annual-stock-input w-full h-7 text-right font-black ${stockTextClass} bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 text-xs pr-1 transition"
+                  title="${isCustom ? '手入力で確定された在庫値です（空欄で自動計算に戻せます）' : '自動計算値です（直接打ち替えて実在庫に修正可能）'}">
+              </td>`;
+          }
+        }
+        bHtml += `
+          <tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-slate-100 transition" id="annual-row-p-${p.id}">
+            <td class="annual-sticky-col-1 px-2 py-1.5 text-xs font-bold text-slate-800 border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)] w-[150px] min-w-[150px]" style="position:sticky;left:0px;z-index:20;background-color:${fixedCol1Bg}!important;">
+              <div class="truncate max-w-[140px] font-bold" title="${p.name}">${p.name}</div>
+              <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''}</div>
+            </td>
+            <td class="annual-sticky-col-2 px-1 py-1.5 text-center text-xs font-medium text-slate-600 border-r border-slate-300 shadow-[1px_0_0_0_rgba(203,213,225,1)] w-[50px] min-w-[50px]" style="position:sticky;left:150px;z-index:20;background-color:${fixedCol2Bg}!important;">
+              ${p.packQty || 1}
+            </td>
+            <td class="annual-sticky-col-3 p-0 text-center w-[70px] min-w-[70px] border-r-2 border-slate-400 shadow-[3px_0_4px_-1px_rgba(0,0,0,0.15)]" style="position:sticky;left:200px;z-index:20;background-color:${fixedCol3Bg}!important;">
+              <input type="number" step="1" value="${currentInitStock}" placeholder="0"
+                data-apid="${p.id}" data-type="annual-init-stock"
+                class="annual-init-stock-input w-full h-7 text-right font-black text-amber-900 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-amber-600 text-xs pr-1 transition" title="前年末在庫 (手入力・保存可)">
+            </td>
+            ${monthCells}
+            <td class="text-right px-2 py-1.5 text-xs font-black text-blue-800 bg-slate-50">${annualProdSalesSum.toLocaleString()}</td>
+            <td class="text-right px-2 py-1.5 text-xs font-black text-indigo-800 bg-slate-50">${annualProdMakeSum.toLocaleString()}</td>
+          </tr>`;
+      });
+      tbody.innerHTML = bHtml;
+
+      // 月別合計フッター
+      let fHtml = `<tr class="divide-x divide-slate-400 text-xs text-slate-900 bg-slate-200">
+        <td class="annual-sticky-col-1 px-2 py-2 font-black text-slate-900 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)] w-[150px] min-w-[150px]" style="position:sticky;left:0px;z-index:20;background-color:#cbd5e1!important;">月別合計</td>
+        <td class="annual-sticky-col-2 border-r border-slate-400 shadow-[1px_0_0_0_rgba(148,163,184,1)] w-[50px] min-w-[50px]" style="position:sticky;left:150px;z-index:20;background-color:#cbd5e1!important;"></td>
+        <td class="annual-sticky-col-3 text-right px-1 py-2 font-black text-amber-950 border-r-2 border-slate-500 shadow-[3px_0_4px_-1px_rgba(0,0,0,0.15)] w-[70px] min-w-[70px]" style="position:sticky;left:200px;z-index:20;background-color:#fde68a!important;">${grandInitStock.toLocaleString()}</td>`;
+
+      let grandSales = 0, grandMake = 0;
+      for (let m = 1; m <= 12; m++) {
+        grandSales += monthlyTotalSales[m];
+        grandMake += monthlyTotalMake[m];
+        if (displayMonths.includes(m)) {
+          fHtml += `
+            <td class="text-center py-2 font-black text-blue-900 bg-blue-100/60 w-[50px] min-w-[50px]">${monthlyTotalSales[m] > 0 ? monthlyTotalSales[m].toLocaleString() : '-'}</td>
+            <td class="text-center py-2 font-black text-indigo-900 bg-indigo-100/60 w-[52px] min-w-[52px]">${monthlyTotalMake[m] > 0 ? monthlyTotalMake[m].toLocaleString() : '-'}</td>
+            <td class="text-right px-1 py-2 font-black text-amber-900 bg-amber-100/70 border-r border-slate-400 w-[54px] min-w-[54px]">${monthlyTotalEndStock[m].toLocaleString()}</td>`;
+        }
+      }
+      fHtml += `
+        <td class="text-right px-2 py-2 font-black text-blue-900 bg-slate-300 w-[70px] min-w-[70px]">${grandSales.toLocaleString()}</td>
+        <td class="text-right px-2 py-2 font-black text-indigo-900 bg-slate-300 w-[70px] min-w-[70px]">${grandMake.toLocaleString()}</td>
+      </tr>`;
+      tfoot.innerHTML = fHtml;
+
+      attachAnnualInputEvents();
+    }
+
     function attachInputEvents() {
       const tooltip = document.getElementById('inputAssistTooltip');
       const activeBadge = document.getElementById('activeEditingBadge');
       const activeText = document.getElementById('activeEditingText');
 
       document.querySelectorAll('.make-input, .out-input').forEach(input => {
-        input.addEventListener('focus', function() {
+        const handleFocus = function() {
+          setTimeout(() => { try { this.select(); } catch (err) {} }, 10);
           const pId = parseInt(this.dataset.pid, 10);
           const day = parseInt(this.dataset.day, 10);
           const type = this.dataset.type;
@@ -852,12 +1117,20 @@
             ? '<span class="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">製造</span>'
             : '<span class="bg-amber-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">出庫</span>';
 
-          tooltip.className = `fixed pointer-events-none z-50 opacity-100 transform -translate-x-1/2 transition-all duration-150 ease-out shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap bg-slate-900 text-white border-2 ${borderClass}`;
-          tooltip.innerHTML = `${typeBadge}<span class="text-white font-extrabold tracking-wide text-xs">${p.name}</span><span class="text-slate-400 font-normal text-[11px]">${APP_STATE.month}/${day}(${dow})</span>`;
-
           const rect = this.getBoundingClientRect();
           tooltip.style.left = `${rect.left + rect.width / 2}px`;
-          tooltip.style.top = `${rect.top - 6}px`;
+          
+          // 入力マス目と絶対に被らないよう、上空または下空へ完全に逃がす（接触・被覆ゼロ設計）
+          if (rect.top < 110) {
+            tooltip.className = `fixed pointer-events-none z-50 opacity-100 shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap bg-slate-900 text-white border-2 ${borderClass}`;
+            tooltip.style.top = `${rect.bottom + 8}px`;
+            tooltip.style.transform = 'translateX(-50%)';
+          } else {
+            tooltip.className = `fixed pointer-events-none z-50 opacity-100 shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap bg-slate-900 text-white border-2 ${borderClass}`;
+            tooltip.style.top = `${rect.top - 8}px`;
+            tooltip.style.transform = 'translate(-50%, -100%)';
+          }
+          tooltip.innerHTML = `${typeBadge}<span class="text-white font-extrabold tracking-wide text-xs">${p.name}</span><span class="text-slate-400 font-normal text-[11px]">${APP_STATE.month}/${day}(${dow})</span>`;
 
           const row = document.getElementById(`row-p-${pId}`);
           if (row) {
@@ -870,8 +1143,10 @@
             activeBadge.classList.add('inline-flex');
             activeText.innerHTML = `${p.name} <span class="text-slate-400 font-normal">(${APP_STATE.month}/${day} ${isMake ? '製造' : '出庫'})</span>`;
           }
-        });
+        };
 
+        input.addEventListener('focus', handleFocus);
+        input.addEventListener('click', function() { this.select(); });
         input.addEventListener('blur', function() { hideInputAssistTooltip(); });
 
         input.addEventListener('change', function() {
@@ -884,10 +1159,573 @@
           }
           renderTable();
         });
+
+        // 矢印キー移動
+        input.addEventListener('keydown', function(e) {
+          const pId = parseInt(this.dataset.pid, 10);
+          const day = parseInt(this.dataset.day, 10);
+          const type = this.dataset.type;
+          const prodIndex = APP_STATE.products.findIndex(prod => prod.id === pId);
+
+          let targetSelector = null;
+          if (e.key === 'ArrowUp' && prodIndex > 0) {
+            const prevPid = APP_STATE.products[prodIndex - 1].id;
+            targetSelector = `input[data-pid="${prevPid}"][data-day="${day}"][data-type="${type}"]`;
+          } else if (e.key === 'ArrowDown' && prodIndex < APP_STATE.products.length - 1) {
+            const nextPid = APP_STATE.products[prodIndex + 1].id;
+            targetSelector = `input[data-pid="${nextPid}"][data-day="${day}"][data-type="${type}"]`;
+          } else if (e.key === 'ArrowLeft') {
+            if (type === 'out') {
+              targetSelector = `input[data-pid="${pId}"][data-day="${day}"][data-type="make"]`;
+            } else if (type === 'make' && day > 1) {
+              targetSelector = `input[data-pid="${pId}"][data-day="${day - 1}"][data-type="out"]`;
+            }
+          } else if (e.key === 'ArrowRight') {
+            if (type === 'make') {
+              targetSelector = `input[data-pid="${pId}"][data-day="${day}"][data-type="out"]`;
+            } else if (type === 'out' && day < APP_STATE.daysInMonth) {
+              targetSelector = `input[data-pid="${pId}"][data-day="${day + 1}"][data-type="make"]`;
+            }
+          }
+
+          if (targetSelector) {
+            e.preventDefault();
+            this.dispatchEvent(new Event('change'));
+            const targetEl = document.querySelector(targetSelector);
+            if (targetEl) {
+              targetEl.focus();
+              targetEl.select();
+            }
+          }
+        });
       });
     }
 
-    // A4横1枚印刷処理
+    function attachAnnualInputEvents() {
+      const year = APP_STATE.annualYear;
+      const tooltip = document.getElementById('inputAssistTooltip');
+
+      document.querySelectorAll('.annual-sales-input, .annual-make-input, .annual-stock-input, .annual-init-stock-input').forEach(input => {
+        const handleFocus = function() {
+          setTimeout(() => { try { this.select(); } catch (err) {} }, 10);
+          const pId = parseInt(this.dataset.apid, 10);
+          const m = parseInt(this.dataset.month, 10);
+          const type = this.dataset.type;
+          const p = APP_STATE.products.find(item => item.id === pId);
+          if (!p) return;
+
+          let badgeHtml = '';
+          let monthText = `${year}年${m}月度`;
+          let borderClass = 'border-indigo-500 shadow-indigo-900/40';
+
+          if (type === 'sales') {
+            badgeHtml = '<span class="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">販売計画</span>';
+            borderClass = 'border-blue-500 shadow-blue-900/40';
+          } else if (type === 'make') {
+            badgeHtml = '<span class="bg-indigo-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">製造枠</span>';
+            borderClass = 'border-indigo-500 shadow-indigo-900/40';
+          } else if (type === 'stock') {
+            badgeHtml = '<span class="bg-amber-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black">月末実在庫(修正)</span>';
+            borderClass = 'border-amber-500 shadow-amber-900/40';
+          } else if (type === 'annual-init-stock') {
+            badgeHtml = '<span class="bg-amber-700 text-white px-1.5 py-0.5 rounded text-[10px] font-black">前年末在庫</span>';
+            monthText = `${year}年 開始在庫`;
+            borderClass = 'border-amber-600 shadow-amber-900/40';
+          }
+
+          const rect = this.getBoundingClientRect();
+          tooltip.style.left = `${rect.left + rect.width / 2}px`;
+          
+          if (rect.top < 110) {
+            tooltip.className = `fixed pointer-events-none z-50 opacity-100 shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap bg-slate-900 text-white border-2 ${borderClass}`;
+            tooltip.style.top = `${rect.bottom + 8}px`;
+            tooltip.style.transform = 'translateX(-50%)';
+          } else {
+            tooltip.className = `fixed pointer-events-none z-50 opacity-100 shadow-2xl rounded-lg px-2.5 py-1 text-xs font-bold flex items-center gap-1.5 whitespace-nowrap bg-slate-900 text-white border-2 ${borderClass}`;
+            tooltip.style.top = `${rect.top - 8}px`;
+            tooltip.style.transform = 'translate(-50%, -100%)';
+          }
+          tooltip.innerHTML = `${badgeHtml}<span class="text-white font-extrabold tracking-wide text-xs">${p.name}</span><span class="text-slate-400 font-normal text-[11px]">${monthText}</span>`;
+
+          const row = document.getElementById(`annual-row-p-${pId}`);
+          if (row) {
+            const nameCell = row.querySelector('.annual-sticky-col-1');
+            if (nameCell) nameCell.classList.add('ring-2', 'ring-indigo-600', 'ring-inset', 'font-black');
+          }
+        };
+
+        input.addEventListener('focus', handleFocus);
+        input.addEventListener('click', function() { this.select(); });
+        input.addEventListener('blur', function() { hideInputAssistTooltip(); });
+
+        input.addEventListener('change', function() {
+          const pId = parseInt(this.dataset.apid, 10);
+          const m = parseInt(this.dataset.month, 10);
+          const type = this.dataset.type;
+
+          if (type === 'annual-init-stock') {
+            const val = parseInt(this.value, 10) || 0;
+            if (!APP_STATE.annualInitStocks[year]) APP_STATE.annualInitStocks[year] = {};
+            APP_STATE.annualInitStocks[year][pId] = val;
+          } else if (type === 'stock') {
+            const rawVal = this.value.trim();
+            if (rawVal === '') {
+              APP_STATE.annualMatrix[year][pId][m].customStock = null;
+            } else {
+              APP_STATE.annualMatrix[year][pId][m].customStock = parseInt(rawVal, 10) || 0;
+            }
+          } else if (APP_STATE.annualMatrix[year][pId][m]) {
+            const val = Math.max(0, parseInt(this.value, 10) || 0);
+            APP_STATE.annualMatrix[year][pId][m][type] = val;
+          }
+          renderAnnualTable();
+          updateInitialStocksForCurrentMonth();
+        });
+
+        // 矢印キー移動
+        input.addEventListener('keydown', function(e) {
+          const pId = parseInt(this.dataset.apid, 10);
+          const m = parseInt(this.dataset.month, 10);
+          const type = this.dataset.type;
+          const prodIndex = APP_STATE.products.findIndex(prod => prod.id === pId);
+
+          let targetSelector = null;
+          if (e.key === 'ArrowUp' && prodIndex > 0) {
+            const prevPid = APP_STATE.products[prodIndex - 1].id;
+            if (type === 'annual-init-stock') {
+              targetSelector = `input[data-apid="${prevPid}"][data-type="annual-init-stock"]`;
+            } else {
+              targetSelector = `input[data-apid="${prevPid}"][data-month="${m}"][data-type="${type}"]`;
+            }
+          } else if (e.key === 'ArrowDown' && prodIndex < APP_STATE.products.length - 1) {
+            const nextPid = APP_STATE.products[prodIndex + 1].id;
+            if (type === 'annual-init-stock') {
+              targetSelector = `input[data-apid="${nextPid}"][data-type="annual-init-stock"]`;
+            } else {
+              targetSelector = `input[data-apid="${nextPid}"][data-month="${m}"][data-type="${type}"]`;
+            }
+          } else if (e.key === 'ArrowLeft') {
+            if (type === 'sales' && m === 1) {
+              targetSelector = `input[data-apid="${pId}"][data-type="annual-init-stock"]`;
+            } else if (type === 'sales' && m > 1) {
+              targetSelector = `input[data-apid="${pId}"][data-month="${m - 1}"][data-type="stock"]`;
+            } else if (type === 'make') {
+              targetSelector = `input[data-apid="${pId}"][data-month="${m}"][data-type="sales"]`;
+            } else if (type === 'stock') {
+              targetSelector = `input[data-apid="${pId}"][data-month="${m}"][data-type="make"]`;
+            }
+          } else if (e.key === 'ArrowRight') {
+            if (type === 'annual-init-stock') {
+              targetSelector = `input[data-apid="${pId}"][data-month="1"][data-type="sales"]`;
+            } else if (type === 'sales') {
+              targetSelector = `input[data-apid="${pId}"][data-month="${m}"][data-type="make"]`;
+            } else if (type === 'make') {
+              targetSelector = `input[data-apid="${pId}"][data-month="${m}"][data-type="stock"]`;
+            } else if (type === 'stock' && m < 12) {
+              targetSelector = `input[data-apid="${pId}"][data-month="${m + 1}"][data-type="sales"]`;
+            }
+          }
+
+          if (targetSelector) {
+            e.preventDefault();
+            this.dispatchEvent(new Event('change'));
+            const targetEl = document.querySelector(targetSelector);
+            if (targetEl) {
+              targetEl.focus();
+              targetEl.select();
+            }
+          }
+        });
+      });
+    }
+
+    function setupStockCsvModal() {
+      const modal = document.getElementById('stockCsvModal');
+      const fileInput = document.getElementById('stockCsvFileInput');
+      const btnApply = document.getElementById('btnApplyStockCsvData');
+      const previewArea = document.getElementById('stockCsvPreviewArea');
+      const previewList = document.getElementById('stockCsvPreviewList');
+      const matchCount = document.getElementById('stockCsvMatchCount');
+      const btnOpen = document.getElementById('btnOpenStockCsvModal');
+
+      if (!modal || !fileInput || !btnApply) return;
+      if (btnOpen) {
+        btnOpen.addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          fileInput.value = '';
+          btnApply.disabled = true;
+          if (previewArea) previewArea.classList.add('hidden');
+        });
+      }
+
+      const closeModal = () => modal.classList.add('hidden');
+      const btnClose = document.getElementById('btnCloseStockCsvModal');
+      if (btnClose) btnClose.addEventListener('click', closeModal);
+      const btnCancel = document.getElementById('btnCancelStockCsvModal');
+      if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          let text = '';
+          try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
+          catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
+
+          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+          const rows = lines.map(line => line.split(','));
+          const totalCasesByProduct = {};
+          APP_STATE.products.forEach(p => { totalCasesByProduct[p.id] = 0; });
+          let hitRowCount = 0;
+
+          for (let r = 1; r < rows.length; r++) {
+            const row = rows[r];
+            if (!row || row.length < 5) continue;
+            const rowCode = cleanNum(row[10]);
+            const rowName = String(row[11] || '').normalize('NFKC').trim();
+            const caseVal = cleanNum(row[21]);
+
+            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
+            if (!matchedP && rowName) {
+              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
+            }
+            if (matchedP && caseVal > 0) {
+              totalCasesByProduct[matchedP.id] += caseVal;
+              hitRowCount++;
+            }
+          }
+
+          if (hitRowCount > 0) {
+            btnApply.disabled = false;
+            if (previewArea) previewArea.classList.remove('hidden');
+            if (matchCount) matchCount.textContent = `${hitRowCount}件の明細を集計成功`;
+            if (previewList) {
+              previewList.innerHTML = APP_STATE.products.map(p => `
+                <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span class="font-bold text-slate-800">${p.name}</span>
+                  <span class="font-extrabold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
+                    合算実在庫: ${(totalCasesByProduct[p.id] || 0).toLocaleString()} c/s
+                  </span>
+                </div>`).join('');
+            }
+            APP_STATE._tempStockResult = totalCasesByProduct;
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnApply.addEventListener('click', function() {
+        if (!APP_STATE._tempStockResult) return;
+        const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
+        if (!APP_STATE.realStockMapByMonth[ymKey]) APP_STATE.realStockMapByMonth[ymKey] = {};
+
+        const stockRecords = [];
+        APP_STATE.products.forEach(p => {
+          const val = APP_STATE._tempStockResult[p.id] || 0;
+          APP_STATE.realStockMapByMonth[ymKey][p.id] = val;
+          p.initStock = val;
+          stockRecords.push({ productId: p.id, productName: p.name, stock: val });
+        });
+
+        renderTable();
+        closeModal();
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('実在庫データをスプレッドシートへ保存中...', '⏳');
+          google.script.run
+            .withSuccessHandler(function() {
+              showToast(`${APP_STATE.year}年${APP_STATE.month}月度の月初実在庫を保存しました！`);
+            })
+            .apiSaveMonthlyStock(stockRecords, APP_STATE.year, APP_STATE.month);
+        }
+      });
+    }
+
+    function setupCsvModal() {
+      const modal = document.getElementById('csvModal');
+      const fileInput = document.getElementById('csvFileInput');
+      const btnApply = document.getElementById('btnApplyCsvData');
+      const previewArea = document.getElementById('csvPreviewArea');
+      const previewList = document.getElementById('csvPreviewList');
+      const matchCount = document.getElementById('csvMatchCount');
+      const btnOpen = document.getElementById('btnOpenCsvModal');
+
+      if (!modal || !fileInput || !btnApply) return;
+      if (btnOpen) {
+        btnOpen.addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          fileInput.value = '';
+          btnApply.disabled = true;
+          if (previewArea) previewArea.classList.add('hidden');
+        });
+      }
+
+      const closeModal = () => modal.classList.add('hidden');
+      const btnClose = document.getElementById('btnCloseCsvModal');
+      if (btnClose) btnClose.addEventListener('click', closeModal);
+      const btnCancel = document.getElementById('btnCancelCsvModal');
+      if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          let text = '';
+          try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
+          catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
+
+          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+          const rows = lines.map(line => line.split(','));
+          const matchedData = [];
+          const dayColMap = {};
+          for (let d = 1; d <= 31; d++) dayColMap[d] = 7 + (d - 1) * 2;
+
+          for (let r = 1; r < rows.length; r++) {
+            const row = rows[r];
+            if (!row || row.length < 3) continue;
+            const rowCode = cleanNum(row[2]);
+            const rowName = String(row[3] || '').trim();
+
+            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
+            if (!matchedP && rowName) {
+              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
+            }
+
+            if (matchedP) {
+              const dailyCases = {};
+              let totalCases = 0;
+              for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+                const val = cleanNum(row[dayColMap[d]]);
+                dailyCases[d] = val;
+                totalCases += val;
+              }
+              matchedData.push({ productId: matchedP.id, productName: matchedP.name, dailyCases, totalCases });
+            }
+          }
+
+          if (matchedData.length > 0) {
+            btnApply.disabled = false;
+            if (previewArea) previewArea.classList.remove('hidden');
+            if (matchCount) matchCount.textContent = `${matchedData.length}品目 照合成功`;
+            if (previewList) {
+              previewList.innerHTML = matchedData.map(item => `
+                <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span class="font-bold text-slate-800">${item.productName}</span>
+                  <span class="font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                    出庫計: ${item.totalCases.toLocaleString()} c/s
+                  </span>
+                </div>`).join('');
+            }
+            APP_STATE._tempCsvOuts = matchedData;
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnApply.addEventListener('click', function() {
+        if (!APP_STATE._tempCsvOuts) return;
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            if (APP_STATE.matrix[p.id]?.[d]) APP_STATE.matrix[p.id][d].out = 0;
+          }
+        });
+        APP_STATE._tempCsvOuts.forEach(item => {
+          Object.keys(item.dailyCases).forEach(dStr => {
+            const d = parseInt(dStr, 10);
+            if (APP_STATE.matrix[item.productId]?.[d]) {
+              APP_STATE.matrix[item.productId][d].out = item.dailyCases[d];
+            }
+          });
+        });
+
+        const outRecords = [];
+        APP_STATE.products.forEach(p => {
+          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
+            if (oVal > 0) outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
+          }
+        });
+
+        renderTable();
+        closeModal();
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          showToast('出庫データをスプレッドシートへ保存中...', '⏳');
+          google.script.run
+            .withSuccessHandler(function() {
+              showToast('出庫データをスプレッドシートへ自動保存しました！');
+            })
+            .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
+        }
+      });
+    }
+
+    function setupAnnualSalesCsvModal() {
+      const modal = document.getElementById('annualSalesCsvModal');
+      const fileInput = document.getElementById('annualSalesCsvFileInput');
+      const btnApply = document.getElementById('btnApplyAnnualSalesCsvData');
+      const previewArea = document.getElementById('annualSalesCsvPreviewArea');
+      const previewList = document.getElementById('annualSalesCsvPreviewList');
+      const matchCount = document.getElementById('annualSalesCsvMatchCount');
+      const btnOpen = document.getElementById('btnOpenAnnualSalesCsvModal');
+
+      if (!modal || !fileInput || !btnApply) return;
+
+      if (btnOpen) {
+        btnOpen.addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          const targetYearText = document.getElementById('annualModalTargetYearText');
+          if (targetYearText) targetYearText.textContent = `${APP_STATE.annualYear}年`;
+          fileInput.value = '';
+          btnApply.disabled = true;
+          if (previewArea) previewArea.classList.add('hidden');
+        });
+      }
+
+      const closeModal = () => modal.classList.add('hidden');
+      const btnClose = document.getElementById('btnCloseAnnualSalesCsvModal');
+      if (btnClose) btnClose.addEventListener('click', closeModal);
+      const btnCancel = document.getElementById('btnCancelAnnualSalesCsvModal');
+      if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          let text = '';
+          try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
+          catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
+
+          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+          const rows = lines.map(line => line.split(','));
+          const targetYear = APP_STATE.annualYear;
+
+          const colMap = {};
+          for (let m = 1; m <= 12; m++) colMap[m] = 7 + (m - 1) * 6;
+
+          const totalSalesByProduct = {};
+          APP_STATE.products.forEach(p => {
+            totalSalesByProduct[p.id] = { total: 0 };
+            for (let m = 1; m <= 12; m++) totalSalesByProduct[p.id][m] = 0;
+          });
+
+          let hitRowCount = 0;
+          for (let r = 8; r < rows.length; r++) {
+            const row = rows[r];
+            if (!row || row.length < 5) continue;
+            const rowCode = cleanNum(row[0]);
+            const rowName = String(row[1] || '').trim();
+
+            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
+            if (!matchedP && rowName) {
+              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
+            }
+
+            if (matchedP) {
+              for (let m = 1; m <= 12; m++) {
+                const val = cleanNum(row[colMap[m]]);
+                totalSalesByProduct[matchedP.id][m] += val;
+                totalSalesByProduct[matchedP.id].total += val;
+              }
+              hitRowCount++;
+            }
+          }
+
+          if (hitRowCount > 0) {
+            btnApply.disabled = false;
+            if (previewArea) previewArea.classList.remove('hidden');
+            if (matchCount) matchCount.textContent = `${hitRowCount}品目 照合成功 (${targetYear}計画)`;
+            if (previewList) {
+              previewList.innerHTML = APP_STATE.products.map(p => `
+                <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span class="font-bold text-slate-800">${p.name}</span>
+                  <span class="font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                    年間計: ${totalSalesByProduct[p.id].total.toLocaleString()} c/s
+                  </span>
+                </div>`).join('');
+            }
+            APP_STATE._tempAnnualSales = totalSalesByProduct;
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      btnApply.addEventListener('click', function() {
+        if (!APP_STATE._tempAnnualSales) return;
+        const year = APP_STATE.annualYear;
+        initAnnualMatrix(year);
+        APP_STATE.products.forEach(p => {
+          for (let m = 1; m <= 12; m++) {
+            APP_STATE.annualMatrix[year][p.id][m].sales = APP_STATE._tempAnnualSales[p.id][m] || 0;
+          }
+        });
+        renderAnnualTable();
+        closeModal();
+        showToast(`${year}年度の営業販売計画を反映しました！`);
+      });
+    }
+
+    function loadDataFromGas() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        document.getElementById('connectionBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GAS接続中`;
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              const ymKey = getYmKey(res.year, res.month);
+              if (res.realStockMap && Object.keys(res.realStockMap).length > 0) {
+                APP_STATE.realStockMapByMonth[ymKey] = res.realStockMap;
+              } else {
+                delete APP_STATE.realStockMapByMonth[ymKey];
+              }
+              if (res.products) APP_STATE.products = res.products;
+              if (res.matrix) APP_STATE.matrix = res.matrix;
+              if (res.annualMatrixByYear) {
+                Object.keys(res.annualMatrixByYear).forEach(yStr => {
+                  const y = Number(yStr);
+                  initAnnualMatrix(y);
+                  const yearData = res.annualMatrixByYear[yStr];
+                  APP_STATE.products.forEach(p => {
+                    for (let m = 1; m <= 12; m++) {
+                      if (yearData[p.id]?.[m]) {
+                        APP_STATE.annualMatrix[y][p.id][m] = yearData[p.id][m];
+                      }
+                    }
+                  });
+                });
+              }
+              if (res.annualInitStocksByYear) {
+                Object.keys(res.annualInitStocksByYear).forEach(yStr => {
+                  const y = Number(yStr);
+                  if (!APP_STATE.annualInitStocks[y]) APP_STATE.annualInitStocks[y] = {};
+                  Object.assign(APP_STATE.annualInitStocks[y], res.annualInitStocksByYear[yStr]);
+                });
+              }
+              APP_STATE.daysInMonth = res.daysInMonth || 31;
+            }
+            updateInitialStocksForCurrentMonth();
+            renderPeriodTabs();
+            renderTable();
+            renderAnnualTable();
+          })
+          .withFailureHandler(function() {
+            updateInitialStocksForCurrentMonth();
+            renderPeriodTabs();
+            renderTable();
+            renderAnnualTable();
+          })
+          .apiGetInitialData(APP_STATE.year, APP_STATE.month);
+      } else {
+        document.getElementById('connectionBadge').innerHTML = `● プレビューモード`;
+        updateInitialStocksForCurrentMonth();
+        renderPeriodTabs();
+        renderTable();
+        renderAnnualTable();
+      }
+    }
+
     function runSafeA4Print() {
       try {
         const table = document.getElementById('mainTable');
@@ -897,7 +1735,7 @@
 
         const ths = Array.from(trs[0].querySelectorAll('th, td'));
         const dayHeaders = [];
-        for (let i = 4; i < ths.length; i++) {
+        for (let i = 5; i < ths.length; i++) {
           let t = ths[i].innerText.trim().replace(/\s+/g, ' ');
           let bg = '#f8fafc; color:#1e293b;';
           if (t.includes('土')) bg = '#e0f2fe; color:#0369a1;';
@@ -910,13 +1748,13 @@
 
         trs.forEach(tr => {
           const cells = Array.from(tr.querySelectorAll('td, th'));
-          if (cells.length < 5) return;
+          if (cells.length < 6) return;
           const col0Text = cells[0].innerText.trim();
 
           if (col0Text.includes('日別合計') || col0Text.includes('合計')) {
             let dayTotalsHtml = '';
             for (let d = 0; d < dayHeaders.length; d++) {
-              const c = cells[4 + d * 3];
+              const c = cells[5 + d * 3];
               const val = c ? c.innerText.trim() : '-';
               dayTotalsHtml += `<td style="border:1px solid #333; text-align:center; padding:3px 2px; font-size:12px; font-weight:bold;">${val}</td>`;
             }
@@ -933,7 +1771,7 @@
             const prodName = boldEl ? boldEl.innerText.trim() : cells[0].innerText.trim().split('\n')[0].trim();
             let dayCellsHtml = '';
             for (let d = 0; d < dayHeaders.length; d++) {
-              const c = cells[4 + d * 3];
+              const c = cells[5 + d * 3];
               let val = '-';
               if (c) {
                 const input = c.querySelector('input');
@@ -988,558 +1826,258 @@
             <tfoot>${totalRowHtml}</tfoot>
           </table>`;
 
-        setTimeout(() => window.print(), 50);
+        setTimeout(() => { window.print(); }, 50);
       } catch (err) {
-        console.error('Print Error:', err);
         window.print();
       }
     }
 
-    // ==========================================
-    // 5. 年間計画シミュレーション テーブル描画
-    // ==========================================
-    function initAnnualMatrix(targetYear) {
-      if (!APP_STATE.annualMatrix[targetYear]) {
-        APP_STATE.annualMatrix[targetYear] = {};
-        APP_STATE.products.forEach(p => {
-          APP_STATE.annualMatrix[targetYear][p.id] = {};
-          for (let m = 1; m <= 12; m++) {
-            APP_STATE.annualMatrix[targetYear][p.id][m] = { sales: 0, make: 0 };
-          }
-        });
-      }
-    }
+    function switchMainTab(target) {
+      APP_STATE.activeTab = target;
+      const btnDaily = document.getElementById('tabDailyView');
+      const btnAnnual = document.getElementById('tabAnnualView');
+      const viewDaily = document.getElementById('viewDaily');
+      const viewAnnual = document.getElementById('viewAnnual');
+      const dailyNav = document.getElementById('dailyYmNav');
+      const annualNav = document.getElementById('annualYearNav');
+      const dailyBtns = document.getElementById('dailyActionButtons');
+      const annualBtns = document.getElementById('annualActionButtons');
 
-    function renderAnnualTable() {
-      const thead = document.getElementById('annualTableHead');
-      const tbody = document.getElementById('annualTableBody');
-      const tfoot = document.getElementById('annualTableFoot');
-      const year = APP_STATE.annualYear;
-
-      initAnnualMatrix(year);
-      const data = APP_STATE.annualMatrix[year];
-
-      let h1 = `<tr class="divide-x divide-slate-600 bg-slate-800 text-white h-[28px]">
-        <th rowspan="2" class="annual-sticky-th-1 bg-slate-800 text-left px-2 py-1 text-xs font-bold text-slate-100 w-[160px] min-w-[160px] max-w-[160px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">品目名</th>
-        <th rowspan="2" class="annual-th-top bg-slate-800 text-right px-2 py-1 text-[11px] font-bold text-amber-200 w-[80px] min-w-[80px] border-r-2 border-b border-slate-500 shadow-[2px_0_0_0_rgba(100,116,139,1)]">前月末在庫</th>`;
-
-      for (let m = 1; m <= 12; m++) {
-        h1 += `<th colspan="3" class="annual-th-top bg-slate-800 text-center py-1 px-1 border-r border-b border-slate-600 w-[150px] min-w-[150px]">
-          <span class="text-xs font-black tracking-wider text-slate-100">${m}月度</span>
-        </th>`;
-      }
-      h1 += `<th colspan="2" class="annual-th-top bg-indigo-950 text-center py-1 px-1 border-b border-slate-600 w-[130px] min-w-[130px]">
-        <span class="text-xs font-black tracking-wider text-indigo-200">年間合計</span>
-      </th></tr>`;
-
-      let h2 = `<tr class="divide-x divide-slate-600 text-[10px] bg-slate-900 text-slate-300 h-[24px]">`;
-      for (let m = 1; m <= 12; m++) {
-        h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[48px] bg-blue-950 text-blue-200 border-b border-slate-700">販売</th>
-               <th class="annual-th-sub text-center py-0.5 font-bold w-[50px] bg-indigo-950 text-indigo-200 border-b border-slate-700">製造</th>
-               <th class="annual-th-sub text-center py-0.5 font-bold w-[52px] bg-amber-950 text-amber-200 border-r border-slate-600 border-b border-slate-700">在庫</th>`;
-      }
-      h2 += `<th class="annual-th-sub text-center py-0.5 font-bold w-[65px] bg-slate-900 text-blue-200 border-b border-slate-700">販売計</th>
-             <th class="annual-th-sub text-center py-0.5 font-bold w-[65px] bg-slate-900 text-indigo-200 border-b border-slate-700">製造計</th></tr>`;
-      thead.innerHTML = h1 + h2;
-
-      let bHtml = '';
-      const monthlyTotalSales = new Array(13).fill(0);
-      const monthlyTotalMake = new Array(13).fill(0);
-      let grandInitStock = 0;
-
-      APP_STATE.products.forEach((p, rowIdx) => {
-        const isEven = (rowIdx % 2 === 1);
-        const rowBgClass = isEven ? 'bg-slate-50' : 'bg-white';
-        const fixedCol1Bg = isEven ? 'bg-slate-100' : 'bg-white';
-        const fixedCol2Bg = isEven ? 'bg-amber-100' : 'bg-amber-50';
-
-        let annualProdSalesSum = 0;
-        let annualProdMakeSum = 0;
-        
-        // 前月末在庫（手入力値があればそれを優先、なければマスタ初期在庫）
-        const initStockVal = (p.annualInitStock !== undefined) ? p.annualInitStock : (p.masterInitStock || 0);
-        grandInitStock += initStockVal;
-        let runningStock = initStockVal;
-
-        let monthCells = '';
-        for (let m = 1; m <= 12; m++) {
-          const sVal = data[p.id]?.[m]?.sales || 0;
-          const mVal = data[p.id]?.[m]?.make || 0;
-          annualProdSalesSum += sVal;
-          annualProdMakeSum += mVal;
-          monthlyTotalSales[m] += sVal;
-          monthlyTotalMake[m] += mVal;
-
-          runningStock = runningStock + mVal - sVal;
-          let stockStyle = 'text-slate-800 font-semibold';
-          if (runningStock < 0) {
-            stockStyle = 'bg-rose-600 text-white font-black px-1 rounded shadow-sm';
-          } else if (runningStock < p.safeStock) {
-            stockStyle = 'text-rose-600 font-black bg-rose-50 border border-rose-300 px-1 rounded shadow-sm';
-          }
-
-          monthCells += `
-            <td class="p-0 text-center w-[48px] min-w-[48px] bg-blue-50/20">
-              <input type="number" min="0" step="1" value="${sVal > 0 ? sVal : ''}" placeholder="-"
-                data-apid="${p.id}" data-month="${m}" data-type="sales"
-                class="annual-sales-input w-full h-7 text-center font-bold text-blue-900 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs px-0.5 transition">
-            </td>
-            <td class="p-0 text-center w-[50px] min-w-[50px] bg-indigo-50/30">
-              <input type="number" min="0" step="1" value="${mVal > 0 ? mVal : ''}" placeholder="-"
-                data-apid="${p.id}" data-month="${m}" data-type="make"
-                class="annual-make-input w-full h-7 text-center font-black text-indigo-700 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-indigo-600 text-xs px-0.5 transition">
-            </td>
-            <td class="text-right px-1 py-1 text-xs w-[52px] min-w-[52px] border-r border-slate-300 bg-amber-50/20">
-              <span class="${stockStyle} block text-right">${runningStock.toLocaleString()}</span>
-            </td>`;
-        }
-
-        bHtml += `
-          <tr class="divide-x divide-slate-300 ${rowBgClass} hover:bg-emerald-50/60 transition">
-            <td class="annual-sticky-col-1 ${fixedCol1Bg} px-2 py-1.5 text-xs font-bold text-slate-800 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[160px] min-w-[160px] max-w-[160px]">
-              <div class="truncate max-w-[150px] font-bold" title="${p.name}">${p.name}</div>
-              <div class="text-[9px] text-slate-500 font-normal">${p.spec || ''} <span class="text-slate-600">入:${p.packQty || 1}</span></div>
-            </td>
-            <td class="bg-amber-50/70 p-0 text-right border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[80px] min-w-[80px]">
-              <input type="number" min="0" step="1" value="${initStockVal > 0 ? initStockVal : ''}" placeholder="0"
-                data-apid="${p.id}" data-type="initStock"
-                class="annual-init-stock-input w-full h-7 text-right font-black text-amber-950 bg-transparent outline-none focus:bg-white focus:ring-2 focus:ring-amber-500 text-xs px-1.5 transition">
-            </td>
-            ${monthCells}
-            <td class="text-right px-2 py-1.5 text-xs font-black text-blue-800 bg-slate-50">${annualProdSalesSum.toLocaleString()}</td>
-            <td class="text-right px-2 py-1.5 text-xs font-black text-indigo-800 bg-slate-50">${annualProdMakeSum.toLocaleString()}</td>
-          </tr>`;
-      });
-      tbody.innerHTML = bHtml;
-
-      let fHtml = `<tr class="divide-x divide-slate-400 text-xs text-slate-900 bg-slate-200">
-        <td class="annual-sticky-col-1 bg-slate-300 px-2 py-2 font-black text-slate-900 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[160px] min-w-[160px] max-w-[160px]">月別合計</td>
-        <td class="bg-amber-200 text-right px-2 py-2 font-black text-slate-900 border-r-2 border-slate-400 shadow-[2px_0_0_0_rgba(148,163,184,1)] w-[80px] min-w-[80px]">${grandInitStock.toLocaleString()}</td>`;
-
-      let grandSales = 0, grandMake = 0;
-      for (let m = 1; m <= 12; m++) {
-        grandSales += monthlyTotalSales[m];
-        grandMake += monthlyTotalMake[m];
-        fHtml += `
-          <td class="text-center py-2 font-black text-blue-900 bg-blue-100/60">${monthlyTotalSales[m] > 0 ? monthlyTotalSales[m].toLocaleString() : '-'}</td>
-          <td class="text-center py-2 font-black text-indigo-900 bg-indigo-100/60">${monthlyTotalMake[m] > 0 ? monthlyTotalMake[m].toLocaleString() : '-'}</td>
-          <td class="border-r border-slate-400 bg-slate-200"></td>`;
-      }
-      fHtml += `
-        <td class="text-right px-2 py-2 font-black text-blue-900 bg-slate-300">${grandSales.toLocaleString()}</td>
-        <td class="text-right px-2 py-2 font-black text-indigo-900 bg-slate-300">${grandMake.toLocaleString()}</td>
-      </tr>`;
-      tfoot.innerHTML = fHtml;
-
-      // 前月末在庫入力イベント
-      document.querySelectorAll('.annual-init-stock-input').forEach(input => {
-        input.addEventListener('change', function() {
-          const pId = parseInt(this.dataset.apid, 10);
-          const val = Math.max(0, parseInt(this.value, 10) || 0);
-          const p = APP_STATE.products.find(item => item.id === pId);
-          if (p) {
-            p.annualInitStock = val;
-          }
-          renderAnnualTable();
-        });
-      });
-
-      // 販売・製造入力イベント
-      document.querySelectorAll('.annual-sales-input, .annual-make-input').forEach(input => {
-        input.addEventListener('change', function() {
-          const pId = parseInt(this.dataset.apid, 10);
-          const m = parseInt(this.dataset.month, 10);
-          const type = this.dataset.type;
-          const val = Math.max(0, parseInt(this.value, 10) || 0);
-          if (APP_STATE.annualMatrix[year][pId][m]) {
-            APP_STATE.annualMatrix[year][pId][m][type] = val;
-          }
-          renderAnnualTable();
-        });
-      });
-    }
-
-    // ==========================================
-    // 6. CSV各種モーダル設定
-    // ==========================================
-    function setupStockCsvModal() {
-      const modal = document.getElementById('stockCsvModal');
-      const fileInput = document.getElementById('stockCsvFileInput');
-      const btnApply = document.getElementById('btnApplyStockCsvData');
-      const previewArea = document.getElementById('stockCsvPreviewArea');
-      const previewList = document.getElementById('stockCsvPreviewList');
-      const matchCount = document.getElementById('stockCsvMatchCount');
-
-      document.getElementById('btnOpenStockCsvModal').addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        fileInput.value = '';
-        btnApply.disabled = true;
-        previewArea.classList.add('hidden');
-      });
-
-      const closeModal = () => modal.classList.add('hidden');
-      document.getElementById('btnCloseStockCsvModal').addEventListener('click', closeModal);
-      document.getElementById('btnCancelStockCsvModal').addEventListener('click', closeModal);
-
-      fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          let text = '';
-          try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
-          catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
-
-          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-          const rows = lines.map(line => line.split(','));
-          const totalCasesByProduct = {};
-          APP_STATE.products.forEach(p => { totalCasesByProduct[p.id] = 0; });
-          let hitRowCount = 0;
-
-          for (let r = 1; r < rows.length; r++) {
-            const row = rows[r];
-            if (!row || row.length < 5) continue;
-            const rowCode = cleanNum(row[10]);
-            const rowName = String(row[11] || '').normalize('NFKC').trim();
-            const caseVal = cleanNum(row[21]);
-
-            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
-            if (!matchedP && rowName) {
-              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
-            }
-            if (matchedP && caseVal > 0) {
-              totalCasesByProduct[matchedP.id] += caseVal;
-              hitRowCount++;
-            }
-          }
-
-          if (hitRowCount > 0) {
-            btnApply.disabled = false;
-            previewArea.classList.remove('hidden');
-            matchCount.textContent = `${hitRowCount}件の明細を集計成功`;
-            previewList.innerHTML = APP_STATE.products.map(p => `
-              <div class="flex items-center justify-between py-1 border-b border-slate-100">
-                <span class="font-bold text-slate-800">${p.name}</span>
-                <span class="font-extrabold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
-                  合算実在庫: ${(totalCasesByProduct[p.id] || 0).toLocaleString()} c/s
-                </span>
-              </div>`).join('');
-            APP_STATE._tempStockResult = totalCasesByProduct;
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      });
-
-      btnApply.addEventListener('click', function() {
-        if (!APP_STATE._tempStockResult) return;
-        const ymKey = getYmKey(APP_STATE.year, APP_STATE.month);
-        if (!APP_STATE.realStockMapByMonth[ymKey]) APP_STATE.realStockMapByMonth[ymKey] = {};
-
-        const stockRecords = [];
-        APP_STATE.products.forEach(p => {
-          const val = APP_STATE._tempStockResult[p.id] || 0;
-          APP_STATE.realStockMapByMonth[ymKey][p.id] = val;
-          p.initStock = val;
-          stockRecords.push({ productId: p.id, productName: p.name, stock: val });
-        });
-
-        renderTable();
-        closeModal();
-
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          showToast('実在庫データをスプレッドシートへ保存中...', '⏳');
-          google.script.run
-            .withSuccessHandler(function(res) {
-              showToast(`${APP_STATE.year}年${APP_STATE.month}月度の月初実在庫をシートへ保存しました！`);
-            })
-            .apiSaveMonthlyStock(stockRecords, APP_STATE.year, APP_STATE.month);
-        }
-      });
-    }
-
-    function setupCsvModal() {
-      const modal = document.getElementById('csvModal');
-      const fileInput = document.getElementById('csvFileInput');
-      const btnApply = document.getElementById('btnApplyCsvData');
-      const previewArea = document.getElementById('csvPreviewArea');
-      const previewList = document.getElementById('csvPreviewList');
-      const matchCount = document.getElementById('csvMatchCount');
-
-      document.getElementById('btnOpenCsvModal').addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        fileInput.value = '';
-        btnApply.disabled = true;
-        previewArea.classList.add('hidden');
-      });
-
-      const closeModal = () => modal.classList.add('hidden');
-      document.getElementById('btnCloseCsvModal').addEventListener('click', closeModal);
-      document.getElementById('btnCancelCsvModal').addEventListener('click', closeModal);
-
-      fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          let text = '';
-          try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
-          catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
-
-          const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-          const rows = lines.map(line => line.split(','));
-          const matchedData = [];
-          const dayColMap = {};
-          for (let d = 1; d <= 31; d++) dayColMap[d] = 7 + (d - 1) * 2;
-
-          for (let r = 1; r < rows.length; r++) {
-            const row = rows[r];
-            if (!row || row.length < 3) continue;
-            const rowCode = cleanNum(row[2]);
-            const rowName = String(row[3] || '').trim();
-
-            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
-            if (!matchedP && rowName) {
-              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
-            }
-
-            if (matchedP) {
-              const dailyCases = {};
-              let totalCases = 0;
-              for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-                const val = cleanNum(row[dayColMap[d]]);
-                dailyCases[d] = val;
-                totalCases += val;
-              }
-              matchedData.push({ productId: matchedP.id, productName: matchedP.name, dailyCases, totalCases });
-            }
-          }
-
-          if (matchedData.length > 0) {
-            btnApply.disabled = false;
-            previewArea.classList.remove('hidden');
-            matchCount.textContent = `${matchedData.length}品目 照合成功`;
-            previewList.innerHTML = matchedData.map(item => `
-              <div class="flex items-center justify-between py-1 border-b border-slate-100">
-                <span class="font-bold text-slate-800">${item.productName}</span>
-                <span class="font-extrabold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                  出庫計: ${item.totalCases.toLocaleString()} c/s
-                </span>
-              </div>`).join('');
-            APP_STATE._tempCsvOuts = matchedData;
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      });
-
-      btnApply.addEventListener('click', function() {
-        if (!APP_STATE._tempCsvOuts) return;
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            if (APP_STATE.matrix[p.id]?.[d]) APP_STATE.matrix[p.id][d].out = 0;
-          }
-        });
-        APP_STATE._tempCsvOuts.forEach(item => {
-          Object.keys(item.dailyCases).forEach(dStr => {
-            const d = parseInt(dStr, 10);
-            if (APP_STATE.matrix[item.productId]?.[d]) {
-              APP_STATE.matrix[item.productId][d].out = item.dailyCases[d];
-            }
-          });
-        });
-
-        const outRecords = [];
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
-            if (oVal > 0) outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
-          }
-        });
-
-        renderTable();
-        closeModal();
-
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          showToast('出庫データをスプレッドシートへ保存中...', '⏳');
-          google.script.run
-            .withSuccessHandler(function() {
-              showToast('出庫データをスプレッドシートへ自動保存しました！');
-            })
-            .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
-        }
-      });
-    }
-
-    // データ読み込み（GAS通信 + セーフガード）
-    function loadDataFromGas() {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        document.getElementById('connectionBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> GAS接続中`;
-        google.script.run
-          .withSuccessHandler(function(res) {
-            if (res && res.success) {
-              const ymKey = getYmKey(res.year, res.month);
-              if (res.realStockMap) APP_STATE.realStockMapByMonth[ymKey] = res.realStockMap;
-              if (res.products && res.products.length > 0) {
-                const defaultCodeMap = { 1: 112, 2: 116, 3: 23, 4: 31, 5: 163, 6: 37, 7: 161, 8: 52, 9: 74, 10: 159, 11: 160, 12: 169, 13: 170, 14: 171 };
-                res.products.forEach(p => {
-                  if (defaultCodeMap[p.id]) p.code = defaultCodeMap[p.id];
-                });
-                APP_STATE.products = res.products;
-              }
-              if (res.matrix) APP_STATE.matrix = res.matrix;
-              APP_STATE.daysInMonth = res.daysInMonth || 31;
-            }
-            updateInitialStocksForCurrentMonth();
-            renderPeriodTabs();
-            renderTable();
-          })
-          .withFailureHandler(function(err) {
-            console.error('GAS Load Error:', err);
-            updateInitialStocksForCurrentMonth();
-            renderPeriodTabs();
-            renderTable();
-          })
-          .apiGetInitialData(APP_STATE.year, APP_STATE.month);
-      } else {
-        document.getElementById('connectionBadge').innerHTML = `● プレビューモード`;
+      if (target === 'daily') {
+        btnDaily.className = 'px-3 py-1 rounded-md font-bold text-xs transition flex items-center gap-1.5 bg-blue-600 text-white shadow';
+        btnAnnual.className = 'px-3 py-1 rounded-md font-bold text-xs transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+        viewDaily.classList.remove('hidden');
+        viewAnnual.classList.add('hidden');
+        dailyNav.classList.remove('hidden');
+        dailyNav.classList.add('flex');
+        annualNav.classList.add('hidden');
+        annualNav.classList.remove('flex');
+        dailyBtns.classList.remove('hidden');
+        dailyBtns.classList.add('flex');
+        annualBtns.classList.add('hidden');
+        annualBtns.classList.remove('flex');
         updateInitialStocksForCurrentMonth();
-        renderPeriodTabs();
         renderTable();
+      } else {
+        btnAnnual.className = 'px-3 py-1 rounded-md font-bold text-xs transition flex items-center gap-1.5 bg-indigo-600 text-white shadow';
+        btnDaily.className = 'px-3 py-1 rounded-md font-bold text-xs transition flex items-center gap-1.5 text-slate-300 hover:text-white';
+        viewAnnual.classList.remove('hidden');
+        viewDaily.classList.add('hidden');
+        annualNav.classList.remove('hidden');
+        annualNav.classList.add('flex');
+        dailyNav.classList.add('hidden');
+        dailyNav.classList.remove('flex');
+        annualBtns.classList.remove('hidden');
+        annualBtns.classList.add('flex');
+        dailyBtns.classList.add('hidden');
+        dailyBtns.classList.remove('flex');
+        renderAnnualPeriodTabs();
+        renderAnnualTable();
       }
     }
 
-    // 初期起動
     window.addEventListener('load', function() {
       initMatrix();
+      initAnnualMatrix(APP_STATE.annualYear);
       setupStockCsvModal();
       setupCsvModal();
+      setupAnnualSalesCsvModal();
       renderPeriodTabs();
+      renderAnnualPeriodTabs();
       loadDataFromGas();
 
-      document.getElementById('btnPrevMonth').addEventListener('click', () => {
-        if (APP_STATE.month === 1) { APP_STATE.year--; APP_STATE.month = 12; }
-        else { APP_STATE.month--; }
-        document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
-        initMatrix();
-        renderPeriodTabs();
-        loadDataFromGas();
-      });
+      const btnTabDaily = document.getElementById('tabDailyView');
+      if (btnTabDaily) btnTabDaily.addEventListener('click', () => switchMainTab('daily'));
+      const btnTabAnnual = document.getElementById('tabAnnualView');
+      if (btnTabAnnual) btnTabAnnual.addEventListener('click', () => switchMainTab('annual'));
 
-      document.getElementById('btnNextMonth').addEventListener('click', () => {
-        if (APP_STATE.month === 12) { APP_STATE.year++; APP_STATE.month = 1; }
-        else { APP_STATE.month++; }
-        document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
-        initMatrix();
-        renderPeriodTabs();
-        loadDataFromGas();
-      });
+      const btnPrev = document.getElementById('btnPrevMonth');
+      if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+          if (APP_STATE.month === 1) { APP_STATE.year--; APP_STATE.month = 12; }
+          else { APP_STATE.month--; }
+          document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+          initMatrix();
+          renderPeriodTabs();
+          loadDataFromGas();
+        });
+      }
 
-      document.getElementById('annualYearSelect').addEventListener('change', function() {
-        APP_STATE.annualYear = parseInt(this.value, 10);
-        document.getElementById('annualYearBannerTitle').textContent = `${APP_STATE.annualYear}年度 年間販売・製造・在庫計画表`;
-        renderAnnualTable();
-      });
+      const btnNext = document.getElementById('btnNextMonth');
+      if (btnNext) {
+        btnNext.addEventListener('click', () => {
+          if (APP_STATE.month === 12) { APP_STATE.year++; APP_STATE.month = 1; }
+          else { APP_STATE.month++; }
+          document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+          initMatrix();
+          renderPeriodTabs();
+          loadDataFromGas();
+        });
+      }
 
-      document.getElementById('btnReload').addEventListener('click', loadDataFromGas);
-      document.getElementById('btnPrintWeekly').addEventListener('click', runSafeA4Print);
+      const yearSelect = document.getElementById('annualYearSelect');
+      if (yearSelect) {
+        yearSelect.addEventListener('change', function() {
+          APP_STATE.annualYear = parseInt(this.value, 10);
+          syncNextYearFromPrevYear(APP_STATE.annualYear);
+          document.getElementById('annualYearBannerTitle').textContent = `${APP_STATE.annualYear}年度 年間販売・製造・在庫計画表`;
+          renderAnnualTable();
+        });
+      }
 
-      document.addEventListener('pointerdown', (e) => {
-        if (!e.target.closest('.make-input') && !e.target.closest('.out-input')) hideInputAssistTooltip();
-      });
+      const btnCopySales = document.getElementById('btnCopyPrevYearSales');
+      if (btnCopySales) {
+        btnCopySales.addEventListener('click', () => {
+          const curY = APP_STATE.annualYear;
+          const prevY = curY - 1;
+          initAnnualMatrix(curY);
+          initAnnualMatrix(prevY);
 
-      document.getElementById('btnToggleKpi').addEventListener('click', () => {
-        APP_STATE.isKpiCollapsed = !APP_STATE.isKpiCollapsed;
-        const cards = document.getElementById('kpiCardsArea');
-        if (APP_STATE.isKpiCollapsed) {
-          cards.classList.add('hidden');
-          document.getElementById('collapseIcon').textContent = '▲';
-          document.getElementById('collapseText').textContent = 'カードを展開';
-        } else {
-          cards.classList.remove('hidden');
-          document.getElementById('collapseIcon').textContent = '▼';
-          document.getElementById('collapseText').textContent = 'カードを閉じる';
-        }
-      });
-
-      document.getElementById('btnPinKpi').addEventListener('click', () => {
-        APP_STATE.isKpiPinned = !APP_STATE.isKpiPinned;
-        const bar = document.getElementById('kpiBar');
-        if (APP_STATE.isKpiPinned) {
-          bar.classList.add('fixed-pinned');
-          document.getElementById('pinText').textContent = '固定解除';
-        } else {
-          bar.classList.remove('fixed-pinned');
-          document.getElementById('pinText').textContent = '上部に固定';
-        }
-      });
-
-      document.getElementById('btnSyncToDailyTarget').addEventListener('click', () => {
-        const y = APP_STATE.year;
-        const m = APP_STATE.month;
-        if (APP_STATE.annualMatrix[y]) {
+          let copyCount = 0;
           APP_STATE.products.forEach(p => {
-            const planMake = APP_STATE.annualMatrix[y][p.id]?.[m]?.make;
-            if (planMake !== undefined && planMake > 0) p.target = planMake;
+            for (let m = 1; m <= 12; m++) {
+              const prevVal = APP_STATE.annualMatrix[prevY]?.[p.id]?.[m]?.sales || 0;
+              APP_STATE.annualMatrix[curY][p.id][m].sales = prevVal;
+              if (prevVal > 0) copyCount++;
+            }
           });
-        }
-        switchMainTab('daily');
-        showToast(`年間計画の${m}月度製造数を日別計画の目標へ反映しました！`, '🔗');
-      });
+          renderAnnualTable();
+          showToast(`前年(${prevY}年)の販売計画を${curY}年へコピーしました！`, '📋');
+        });
+      }
 
-      document.getElementById('btnSaveAnnualPlan').addEventListener('click', () => {
-        const records = [];
-        const y = APP_STATE.annualYear;
-        initAnnualMatrix(y);
-        APP_STATE.products.forEach(p => {
-          let runningStock = p.masterInitStock || 0;
-          for (let m = 1; m <= 12; m++) {
-            const sVal = APP_STATE.annualMatrix[y][p.id]?.[m]?.sales || 0;
-            const mVal = APP_STATE.annualMatrix[y][p.id]?.[m]?.make || 0;
-            runningStock = runningStock + mVal - sVal;
-            records.push({
-              ymKey: `${y}-${String(m).padStart(2, '0')}`,
-              productId: p.id,
-              productName: p.name,
-              sales: sVal,
-              make: mVal,
-              stock: runningStock
+      const btnSaveAnnual = document.getElementById('btnSaveAnnualPlan');
+      if (btnSaveAnnual) {
+        btnSaveAnnual.addEventListener('click', () => {
+          const year = APP_STATE.annualYear;
+          const records = [];
+          const initMap = APP_STATE.annualInitStocks[year] || {};
+
+          APP_STATE.products.forEach(p => {
+            const pInit = (initMap[p.id] !== undefined) ? initMap[p.id] : (p.masterInitStock || 0);
+            let runningStk = pInit;
+            for (let m = 1; m <= 12; m++) {
+              const ymKey = getYmKey(year, m);
+              const sVal = APP_STATE.annualMatrix[year]?.[p.id]?.[m]?.sales || 0;
+              const mVal = APP_STATE.annualMatrix[year]?.[p.id]?.[m]?.make || 0;
+              const cStock = APP_STATE.annualMatrix[year]?.[p.id]?.[m]?.customStock;
+              const isCustom = (cStock !== undefined && cStock !== null && cStock !== '');
+              const autoStk = runningStk + mVal - sVal;
+              runningStk = isCustom ? Number(cStock) : autoStk;
+
+              records.push({
+                ymKey: ymKey,
+                productId: p.id,
+                productName: p.name,
+                sales: sVal,
+                make: mVal,
+                stock: runningStk,
+                annualInitStock: pInit,
+                customStock: isCustom ? Number(cStock) : ''
+              });
+            }
+          });
+
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            showToast('年間計画をスプレッドシートへ保存中...', '⏳');
+            google.script.run
+              .withSuccessHandler(function() {
+                showToast(`${year}年度の年間計画を保存しました！`, '💾');
+                updateInitialStocksForCurrentMonth();
+                renderTable();
+              })
+              .apiSaveAnnualPlan(records, year);
+          } else {
+            showToast(`${year}年度の年間計画を保存しました（プレビュー）`, '💾');
+          }
+        });
+      }
+
+      const btnSyncTarget = document.getElementById('btnSyncToDailyTarget');
+      if (btnSyncTarget) {
+        btnSyncTarget.addEventListener('click', () => {
+          const y = APP_STATE.year;
+          const m = APP_STATE.month;
+          if (APP_STATE.annualMatrix[y]) {
+            APP_STATE.products.forEach(p => {
+              const planMake = APP_STATE.annualMatrix[y][p.id]?.[m]?.make;
+              if (planMake !== undefined) p.target = planMake;
             });
           }
+          switchMainTab('daily');
+          showToast(`年間計画の${m}月度製造数を日別目標へ反映しました！`, '🔗');
         });
+      }
 
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          showToast(`${y}年度の年間計画をスプレッドシートへ保存中...`, '⏳');
-          google.script.run
-            .withSuccessHandler(() => showToast(`${y}年度の年間計画を保存しました！`, '💾'))
-            .apiSaveAnnualPlan(records, y);
-        } else {
-          showToast(`${y}年度の年間計画を保存しました（プレビュー）`, '💾');
-        }
+      const btnRel = document.getElementById('btnReload');
+      if (btnRel) btnRel.addEventListener('click', loadDataFromGas);
+
+      const btnPrint = document.getElementById('btnPrintWeekly');
+      if (btnPrint) btnPrint.addEventListener('click', runSafeA4Print);
+
+      document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('input')) hideInputAssistTooltip();
       });
 
-      document.getElementById('btnSaveToSheet').addEventListener('click', () => {
-        const planRecords = [];
-        const outRecords = [];
-        APP_STATE.products.forEach(p => {
-          for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-            const mVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
-            const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
-            if (mVal > 0) planRecords.push({ day: d, productId: p.id, productName: p.name, make: mVal });
-            if (oVal > 0) outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
+      const btnToggle = document.getElementById('btnToggleKpi');
+      if (btnToggle) {
+        btnToggle.addEventListener('click', () => {
+          APP_STATE.isKpiCollapsed = !APP_STATE.isKpiCollapsed;
+          const cards = document.getElementById('kpiCardsArea');
+          if (APP_STATE.isKpiCollapsed) {
+            cards.classList.add('hidden');
+            document.getElementById('collapseIcon').textContent = '▲';
+            document.getElementById('collapseText').textContent = 'カードを展開';
+          } else {
+            cards.classList.remove('hidden');
+            document.getElementById('collapseIcon').textContent = '▼';
+            document.getElementById('collapseText').textContent = 'カードを閉じる';
           }
         });
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          showToast('スプレッドシートへ保存中...', '⏳');
-          google.script.run
-            .withSuccessHandler(() => {
-              google.script.run
-                .withSuccessHandler(() => { showToast(`製造計画(${planRecords.length}件)・出庫(${outRecords.length}件)を保存しました！`); })
-                .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
-            })
-            .apiSaveDailyPlans(planRecords, APP_STATE.year, APP_STATE.month);
-        } else {
-          showToast(`製造${planRecords.length}件・出庫${outRecords.length}件を保存しました（プレビュー）`);
-        }
-      });
+      }
+
+      const btnPin = document.getElementById('btnPinKpi');
+      if (btnPin) {
+        btnPin.addEventListener('click', () => {
+          APP_STATE.isKpiPinned = !APP_STATE.isKpiPinned;
+          const bar = document.getElementById('kpiBar');
+          if (APP_STATE.isKpiPinned) {
+            bar.classList.add('fixed-pinned');
+            document.getElementById('pinText').textContent = '固定解除';
+          } else {
+            bar.classList.remove('fixed-pinned');
+            document.getElementById('pinText').textContent = '上部に固定';
+          }
+        });
+      }
+
+      const btnSaveDaily = document.getElementById('btnSaveToSheet');
+      if (btnSaveDaily) {
+        btnSaveDaily.addEventListener('click', () => {
+          const planRecords = [];
+          const outRecords = [];
+          APP_STATE.products.forEach(p => {
+            for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+              const mVal = APP_STATE.matrix[p.id]?.[d]?.make || 0;
+              const oVal = APP_STATE.matrix[p.id]?.[d]?.out || 0;
+              if (mVal > 0) planRecords.push({ day: d, productId: p.id, productName: p.name, make: mVal });
+              if (oVal > 0) outRecords.push({ day: d, productId: p.id, productName: p.name, out: oVal });
+            }
+          });
+          if (typeof google !== 'undefined' && google.script && google.script.run) {
+            showToast('スプレッドシートへ保存中...', '⏳');
+            google.script.run
+              .withSuccessHandler(() => {
+                google.script.run
+                  .withSuccessHandler(() => { showToast(`製造計画(${planRecords.length}件)・出庫(${outRecords.length}件)を保存しました！`); })
+                  .apiSaveDailyOuts(outRecords, APP_STATE.year, APP_STATE.month);
+              })
+              .apiSaveDailyPlans(planRecords, APP_STATE.year, APP_STATE.month);
+          } else {
+            showToast(`製造${planRecords.length}件・出庫${outRecords.length}件を保存しました（プレビュー）`);
+          }
+        });
+      }
     });
   </script>
 </body>
