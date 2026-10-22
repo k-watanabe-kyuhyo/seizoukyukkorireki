@@ -132,9 +132,52 @@
       <!-- 日別ビュー用アクション -->
       <div id="dailyActionButtons" class="flex items-center space-x-1.5 shrink-0">
         <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700 shrink-0">
-          <button id="btnPrevMonth" class="px-2 py-0.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition font-bold text-xs">◀</button>
-          <span id="currentYearMonthText" class="px-2.5 py-0.5 font-black text-xs text-white whitespace-nowrap">2026年10月度</span>
-          <button id="btnNextMonth" class="px-2 py-0.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition font-bold text-xs">▶</button>
+          <button id="btnPrevMonth" class="px-1.5 py-0.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition font-bold text-xs" title="前月へ">◀</button>
+          <select id="dailyYearMonthSelect" class="bg-slate-900 text-white font-black outline-none border-b border-blue-500 px-1.5 py-0.5 cursor-pointer text-xs rounded whitespace-nowrap">
+            <optgroup label="2025年度">
+              <option value="2025-1">2025年1月度</option>
+              <option value="2025-2">2025年2月度</option>
+              <option value="2025-3">2025年3月度</option>
+              <option value="2025-4">2025年4月度</option>
+              <option value="2025-5">2025年5月度</option>
+              <option value="2025-6">2025年6月度</option>
+              <option value="2025-7">2025年7月度</option>
+              <option value="2025-8">2025年8月度</option>
+              <option value="2025-9">2025年9月度</option>
+              <option value="2025-10">2025年10月度</option>
+              <option value="2025-11">2025年11月度</option>
+              <option value="2025-12">2025年12月度</option>
+            </optgroup>
+            <optgroup label="2026年度">
+              <option value="2026-1">2026年1月度</option>
+              <option value="2026-2">2026年2月度</option>
+              <option value="2026-3">2026年3月度</option>
+              <option value="2026-4">2026年4月度</option>
+              <option value="2026-5">2026年5月度</option>
+              <option value="2026-6">2026年6月度</option>
+              <option value="2026-7">2026年7月度</option>
+              <option value="2026-8">2026年8月度</option>
+              <option value="2026-9">2026年9月度</option>
+              <option value="2026-10" selected>2026年10月度</option>
+              <option value="2026-11">2026年11月度</option>
+              <option value="2026-12">2026年12月度</option>
+            </optgroup>
+            <optgroup label="2027年度">
+              <option value="2027-1">2027年1月度</option>
+              <option value="2027-2">2027年2月度</option>
+              <option value="2027-3">2027年3月度</option>
+              <option value="2027-4">2027年4月度</option>
+              <option value="2027-5">2027年5月度</option>
+              <option value="2027-6">2027年6月度</option>
+              <option value="2027-7">2027年7月度</option>
+              <option value="2027-8">2027年8月度</option>
+              <option value="2027-9">2027年9月度</option>
+              <option value="2027-10">2027年10月度</option>
+              <option value="2027-11">2027年11月度</option>
+              <option value="2027-12">2027年12月度</option>
+            </optgroup>
+          </select>
+          <button id="btnNextMonth" class="px-1.5 py-0.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition font-bold text-xs" title="翌月へ">▶</button>
         </div>
         <button id="btnOpenStockCsvModal" class="px-2.5 py-1 rounded-lg font-bold bg-cyan-700 hover:bg-cyan-600 text-white transition flex items-center gap-1 shadow-sm active:scale-95 whitespace-nowrap text-xs" title="在庫報告書CSVから月初実在庫を一括更新">
           <span>📦</span> 実在庫CSV
@@ -489,7 +532,7 @@
 
     function cleanNum(val) {
       if (val === undefined || val === null || val === '') return 0;
-      const str = String(val).normalize('NFKC').replace(/,/g, '').trim();
+      const str = String(val).normalize('NFKC').replace(/["'¥,\s]/g, '').trim();
       const n = parseInt(str, 10);
       return isNaN(n) ? 0 : n;
     }
@@ -509,6 +552,21 @@
         toast.classList.remove('translate-y-0', 'opacity-100');
         toast.classList.add('translate-y-10', 'opacity-0');
       }, 3000);
+    }
+
+    /* 日別計画の年月セレクトボックスの同期 */
+    function syncDailyYearMonthSelect() {
+      const sel = document.getElementById('dailyYearMonthSelect');
+      if (!sel) return;
+      const targetVal = `${APP_STATE.year}-${APP_STATE.month}`;
+      let optionExists = Array.from(sel.options).some(opt => opt.value === targetVal);
+      if (!optionExists) {
+        const opt = document.createElement('option');
+        opt.value = targetVal;
+        opt.textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+        sel.appendChild(opt);
+      }
+      sel.value = targetVal;
     }
 
     /* ツールチップ非表示 */
@@ -1646,36 +1704,150 @@
           try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
           catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
 
+          // クォート対応CSVパーサー
+          const parseRow = (line) => {
+            const res = [];
+            let cur = '';
+            let inQ = false;
+            for (let i = 0; i < line.length; i++) {
+              const c = line[i];
+              if (c === '"') {
+                if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+                else { inQ = !inQ; }
+              } else if (c === ',' && !inQ) {
+                res.push(cur);
+                cur = '';
+              } else {
+                cur += c;
+              }
+            }
+            res.push(cur);
+            return res.map(s => s.replace(/^["'\s]+|["'\s]+$/g, '').trim());
+          };
+
           const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-          const rows = lines.map(line => line.split(','));
-          const matchedData = [];
+          const rows = lines.map(parseRow);
+          if (rows.length < 2) return;
+
+          // 自社商品コードから品目IDへの確実なマッピング辞書
+          // （GASからproductsが上書きされてcodeプロパティが消えても100%確実に照合可能）
+          const CODE_TO_PRODUCT_ID = {
+            112: 1,  // おいしい氷3kg
+            116: 2,  // おいしい氷アイスカップ
+            23:  3,  // 博多純氷カチ割り1kg
+            31:  4,  // おいしい氷1kg
+            163: 5,  // ドンキホーテ極氷1.1kg
+            37:  6,  // ヒロキュー千年氷1kg
+            164: 6,  // ヒロキュー千年氷1kg (CSV上のコード)
+            161: 7,  // CGC1kg
+            52:  8,  // おいしい氷2kgチャック
+            74:  9,  // おいしい氷1.1kg
+            159: 10, // ゆめイチ1kg
+            160: 11, // ゆめイチ2.1kg
+            169: 12, // スティック40mm
+            170: 13, // スティック60mm
+            171: 14  // スティック110mm
+          };
+
+          // 列位置の特定
+          let codeColIdx = 2; // デフォルトC列 (商品コード)
+          let nameColIdx = 3; // デフォルトD列 (商品名)
           const dayColMap = {};
+
+          // デフォルト：H列(インデックス7)から1列おき(バラ数を飛ばしてケース数列のみ)
           for (let d = 1; d <= 31; d++) {
             dayColMap[d] = 7 + (d - 1) * 2;
           }
 
+          // 1行目の見出しから列位置を精査
+          const headerRow = rows[0];
+          let foundHeaderCases = 0;
+          for (let c = 0; c < headerRow.length; c++) {
+            const hText = String(headerRow[c] || '').normalize('NFKC').trim();
+            if (/商品コード|商品CD|品目コード/i.test(hText)) codeColIdx = c;
+            if (/商品名|品名|品目名/i.test(hText)) nameColIdx = c;
+
+            // 「ケース数1」「ケース1」の列を厳密に特定
+            const matchCase = hText.match(/ケース(?:数)?\s*(\d+)/i) || hText.match(/(\d+)\s*(?:日)?.*ケース/i);
+            if (matchCase) {
+              const d = parseInt(matchCase[1] || matchCase[2], 10);
+              if (d >= 1 && d <= 31) {
+                dayColMap[d] = c;
+                foundHeaderCases++;
+              }
+            }
+          }
+
+          // 全品目の集計バッファ
+          const resultMap = {};
+          APP_STATE.products.forEach(p => {
+            resultMap[p.id] = { productId: p.id, productName: p.name, dailyCases: {}, totalCases: 0, hit: false };
+            for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
+              resultMap[p.id].dailyCases[d] = 0;
+            }
+          });
+
+          // 行ごとのマッチング関数
+          const matchProduct = (row) => {
+            // 合計行の除外（A〜D列に「合計」が含まれる場合）
+            const leadingText = row.slice(0, 5).join(' ');
+            if (/合計|小計|総計|日別計/.test(leadingText)) return null;
+
+            // 1. C列（商品コード）で辞書照合（最優先・100%正確）
+            const rowCode = cleanNum(row[codeColIdx]);
+            if (rowCode > 0) {
+              const targetPId = CODE_TO_PRODUCT_ID[rowCode];
+              if (targetPId !== undefined) {
+                return APP_STATE.products.find(p => p.id === targetPId);
+              }
+              // 自社コード以外の数値（大村製氷139、アイスライン152等）は品名検索に回さず除外
+              return null;
+            }
+
+            // 2. コード列が空の場合のみ、D列品名で厳格照合
+            const rowName = String(row[nameColIdx] || '').normalize('NFKC').replace(/["'¥,\s　]/g, '').toLowerCase();
+            if (!rowName) return null;
+            if (/大村|アイスライン|オーロラ|プレミアム|ローソン/.test(rowName)) return null;
+
+            // スティック系
+            if (rowName.includes('スティック')) {
+              if (rowName.includes('40')) return APP_STATE.products.find(p => p.id === 12);
+              if (rowName.includes('60')) return APP_STATE.products.find(p => p.id === 13);
+              if (rowName.includes('110')) return APP_STATE.products.find(p => p.id === 14);
+              return null;
+            }
+
+            // おいしい氷1kg (他の容量と混同しないよう厳格判定)
+            if (rowName.includes('おいしい氷') && (rowName.includes('1kg') || rowName.includes('1k')) && !rowName.includes('1.1') && !rowName.includes('2kg') && !rowName.includes('3kg') && !rowName.includes('カップ')) {
+              return APP_STATE.products.find(p => p.id === 4);
+            }
+
+            return APP_STATE.products.find(p => {
+              const pNorm = String(p.name || '').normalize('NFKC').replace(/["'¥,\s　]/g, '').toLowerCase();
+              return pNorm === rowName;
+            });
+          };
+
+          // データ行の解析と日別ケース数の集計
           for (let r = 1; r < rows.length; r++) {
             const row = rows[r];
             if (!row || row.length < 3) continue;
-            const rowCode = cleanNum(row[2]);
-            const rowName = String(row[3] || '').trim();
-
-            let matchedP = APP_STATE.products.find(p => p.code === rowCode || p.id === rowCode);
-            if (!matchedP && rowName) {
-              matchedP = APP_STATE.products.find(p => rowName.includes(p.name) || p.name.includes(rowName));
-            }
-
+            const matchedP = matchProduct(row);
             if (matchedP) {
-              const dailyCases = {};
-              let totalCases = 0;
+              const target = resultMap[matchedP.id];
+              target.hit = true;
               for (let d = 1; d <= APP_STATE.daysInMonth; d++) {
-                const val = cleanNum(row[dayColMap[d]]);
-                dailyCases[d] = val;
-                totalCases += val;
+                const col = dayColMap[d];
+                if (col !== undefined && col < row.length) {
+                  const val = cleanNum(row[col]);
+                  target.dailyCases[d] += val;
+                  target.totalCases += val;
+                }
               }
-              matchedData.push({ productId: matchedP.id, productName: matchedP.name, dailyCases, totalCases });
             }
           }
+
+          const matchedData = Object.values(resultMap).filter(item => item.hit);
 
           if (matchedData.length > 0) {
             btnApply.disabled = false;
@@ -1689,6 +1861,11 @@
                 </span>
               </div>`).join('');
             APP_STATE._tempCsvOuts = matchedData;
+          } else {
+            btnApply.disabled = true;
+            previewArea.classList.remove('hidden');
+            matchCount.textContent = `0品目 (照合失敗)`;
+            previewList.innerHTML = `<div class="text-rose-600 font-bold py-1">CSV内の品目コードまたは品名を照合できませんでした。ファイル内容をご確認ください。</div>`;
           }
         };
         reader.readAsArrayBuffer(file);
@@ -1839,6 +2016,11 @@
           .withSuccessHandler(function(res) {
             if (res && res.success) {
               const ymKey = getYmKey(res.year, res.month);
+              if (res.year && res.month) {
+                APP_STATE.year = res.year;
+                APP_STATE.month = res.month;
+                syncDailyYearMonthSelect();
+              }
               if (res.realStockMap) APP_STATE.realStockMapByMonth[ymKey] = res.realStockMap;
               if (res.products) APP_STATE.products = res.products;
               if (res.matrix) APP_STATE.matrix = res.matrix;
@@ -1872,6 +2054,7 @@
       setupStockCsvModal();
       setupCsvModal();
       setupAnnualSalesCsvModal();
+      syncDailyYearMonthSelect();
       renderPeriodTabs();
       loadDataFromGas();
 
@@ -1879,11 +2062,24 @@
       document.getElementById('tabBtnDaily').addEventListener('click', () => switchMainTab('daily'));
       document.getElementById('tabBtnAnnual').addEventListener('click', () => switchMainTab('annual'));
 
-      /* 年月送り */
+      /* 年月セレクトボックス切り替え */
+      const ymSelect = document.getElementById('dailyYearMonthSelect');
+      if (ymSelect) {
+        ymSelect.addEventListener('change', function() {
+          const parts = this.value.split('-');
+          APP_STATE.year = parseInt(parts[0], 10);
+          APP_STATE.month = parseInt(parts[1], 10);
+          initMatrix();
+          renderPeriodTabs();
+          loadDataFromGas();
+        });
+      }
+
+      /* 年月送りボタン（◀ / ▶） */
       document.getElementById('btnPrevMonth').addEventListener('click', () => {
         if (APP_STATE.month === 1) { APP_STATE.year--; APP_STATE.month = 12; }
         else { APP_STATE.month--; }
-        document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+        syncDailyYearMonthSelect();
         initMatrix();
         renderPeriodTabs();
         loadDataFromGas();
@@ -1892,7 +2088,7 @@
       document.getElementById('btnNextMonth').addEventListener('click', () => {
         if (APP_STATE.month === 12) { APP_STATE.year++; APP_STATE.month = 1; }
         else { APP_STATE.month++; }
-        document.getElementById('currentYearMonthText').textContent = `${APP_STATE.year}年${APP_STATE.month}月度`;
+        syncDailyYearMonthSelect();
         initMatrix();
         renderPeriodTabs();
         loadDataFromGas();
