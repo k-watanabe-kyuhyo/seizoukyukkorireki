@@ -508,7 +508,7 @@
       annualMatrix: {},
       annualMatrixByYear: {},
 
-      // 全14品目の商品マスタ定義
+      // 全14品目の商品マスタ定義（初期値）
       products: [
         { id: 1,  code: 112, name: 'おいしい氷3kg',         spec: '3kg×4',   packQty: 4,  target: 10800, masterInitStock: 6208, initStock: 6208, safeStock: 500 },
         { id: 2,  code: 116, name: 'おいしい氷アイスカップ', spec: 'カップ',  packQty: 12, target: 0,     masterInitStock: 50,   initStock: 50,   safeStock: 20 },
@@ -635,7 +635,6 @@
           for (let m = 1; m <= 12; m++) {
             APP_STATE.annualMatrixByYear[targetYear][p.id][m] = { sales: 0, make: 0, customStock: null };
           }
-          // 初期前月末在庫
           let initVal = p.masterInitStock;
           if (targetYear === 2026 && p.masterInitStock !== undefined) {
             initVal = p.masterInitStock;
@@ -859,7 +858,6 @@
     function attachAnnualInputEvents() {
       const tooltip = document.getElementById('inputAssistTooltip');
       const allInputs = Array.from(document.querySelectorAll('.annual-sales-input, .annual-make-input, .annual-stock-input, .annual-init-stock-input'));
-      const colOrder = ['sales', 'make', 'stock'];
 
       allInputs.forEach(input => {
         input.addEventListener('focus', function() {
@@ -1030,7 +1028,6 @@
           if (confMap[p.id] !== undefined) p.initStock = confMap[p.id];
         });
       } else {
-        // 年間計画の前月末在庫から自動連動（10月度なら9月末在庫）
         const prevM = APP_STATE.month - 1;
         const prevY = (prevM === 0) ? (APP_STATE.year - 1) : APP_STATE.year;
         const targetCalcMonth = (prevM === 0) ? 12 : prevM;
@@ -1040,7 +1037,6 @@
         });
       }
 
-      // 年間計画の計画製造数を日別目標へ反映
       const annualY = APP_STATE.year;
       const annualM = APP_STATE.month;
       if (APP_STATE.annualMatrixByYear?.[annualY]) {
@@ -1675,7 +1671,7 @@
       });
     }
 
-    /* 出庫CSVモーダルの設定 */
+    /* 出庫CSVモーダルの設定 (スプレッドシートI列商品コードと完全連動) */
     function setupCsvModal() {
       const modal = document.getElementById('csvModal');
       const fileInput = document.getElementById('csvFileInput');
@@ -1704,7 +1700,6 @@
           try { text = new TextDecoder('shift-jis').decode(evt.target.result); }
           catch (err) { text = new TextDecoder('utf-8').decode(evt.target.result); }
 
-          // クォート対応CSVパーサー
           const parseRow = (line) => {
             const res = [];
             let cur = '';
@@ -1729,52 +1724,38 @@
           const rows = lines.map(parseRow);
           if (rows.length < 2) return;
 
-          // 自社商品コードから品目IDへの確実なマッピング辞書
-          // （GASからproductsが上書きされてcodeプロパティが消えても100%確実に照合可能）
-          const CODE_TO_PRODUCT_ID = {
-            112: 1,  // おいしい氷3kg
-            116: 2,  // おいしい氷アイスカップ
-            23:  3,  // 博多純氷カチ割り1kg
-            31:  4,  // おいしい氷1kg
-            163: 5,  // ドンキホーテ極氷1.1kg
-            37:  6,  // ヒロキュー千年氷1kg
-            164: 6,  // ヒロキュー千年氷1kg (CSV上のコード)
-            161: 7,  // CGC1kg
-            52:  8,  // おいしい氷2kgチャック
-            74:  9,  // おいしい氷1.1kg
-            159: 10, // ゆめイチ1kg
-            160: 11, // ゆめイチ2.1kg
-            169: 12, // スティック40mm
-            170: 13, // スティック60mm
-            171: 14  // スティック110mm
-          };
-
           // 列位置の特定
-          let codeColIdx = 2; // デフォルトC列 (商品コード)
-          let nameColIdx = 3; // デフォルトD列 (商品名)
+          let codeColIdx = 2; // C列 (商品コード)
+          let nameColIdx = 3; // D列 (商品名)
           const dayColMap = {};
 
-          // デフォルト：H列(インデックス7)から1列おき(バラ数を飛ばしてケース数列のみ)
+          // デフォルト：H列(インデックス7)から2列おき(バラ数を完全除外しケース数列のみ抽出)
           for (let d = 1; d <= 31; d++) {
             dayColMap[d] = 7 + (d - 1) * 2;
           }
 
-          // 1行目の見出しから列位置を精査
+          // 見出し行から「ケース数1」「ケース数2」...列を厳密に特定
           const headerRow = rows[0];
-          let foundHeaderCases = 0;
           for (let c = 0; c < headerRow.length; c++) {
             const hText = String(headerRow[c] || '').normalize('NFKC').trim();
             if (/商品コード|商品CD|品目コード/i.test(hText)) codeColIdx = c;
             if (/商品名|品名|品目名/i.test(hText)) nameColIdx = c;
 
-            // 「ケース数1」「ケース1」の列を厳密に特定
             const matchCase = hText.match(/ケース(?:数)?\s*(\d+)/i) || hText.match(/(\d+)\s*(?:日)?.*ケース/i);
             if (matchCase) {
-              const d = parseInt(matchCase[1] || matchCase[2], 10);
+              const d = parseInt(matchCase[1], 10);
               if (d >= 1 && d <= 31) {
                 dayColMap[d] = c;
-                foundHeaderCases++;
               }
+            }
+          }
+
+          // CSV内に「全体（倉庫コード0）」行が存在するかチェック
+          let hasGlobalTotalRow = false;
+          for (let r = 1; r < rows.length; r++) {
+            if (rows[r] && (cleanNum(rows[r][0]) === 0 || String(rows[r][1] || '').includes('全体'))) {
+              hasGlobalTotalRow = true;
+              break;
             }
           }
 
@@ -1787,45 +1768,25 @@
             }
           });
 
-          // 行ごとのマッチング関数
+          // 行ごとのマッチング関数（スプシI列商品コードによる完全一致）
           const matchProduct = (row) => {
-            // 合計行の除外（A〜D列に「合計」が含まれる場合）
             const leadingText = row.slice(0, 5).join(' ');
-            if (/合計|小計|総計|日別計/.test(leadingText)) return null;
+            if (/小計|総計|日別計/i.test(leadingText)) return null;
 
-            // 1. C列（商品コード）で辞書照合（最優先・100%正確）
+            // 「全体」行が存在するCSVの場合、個別倉庫との二重加算を防ぐため「全体」行のみを集計
+            if (hasGlobalTotalRow) {
+              const whCode = cleanNum(row[0]);
+              const whName = String(row[1] || '').trim();
+              if (whCode !== 0 && !whName.includes('全体')) return null;
+            }
+
+            // C列（商品コード）でスプシのI列（p.code）と完全一致照合
             const rowCode = cleanNum(row[codeColIdx]);
             if (rowCode > 0) {
-              const targetPId = CODE_TO_PRODUCT_ID[rowCode];
-              if (targetPId !== undefined) {
-                return APP_STATE.products.find(p => p.id === targetPId);
-              }
-              // 自社コード以外の数値（大村製氷139、アイスライン152等）は品名検索に回さず除外
-              return null;
+              const found = APP_STATE.products.find(p => p.code === rowCode);
+              if (found) return found;
             }
-
-            // 2. コード列が空の場合のみ、D列品名で厳格照合
-            const rowName = String(row[nameColIdx] || '').normalize('NFKC').replace(/["'¥,\s　]/g, '').toLowerCase();
-            if (!rowName) return null;
-            if (/大村|アイスライン|オーロラ|プレミアム|ローソン/.test(rowName)) return null;
-
-            // スティック系
-            if (rowName.includes('スティック')) {
-              if (rowName.includes('40')) return APP_STATE.products.find(p => p.id === 12);
-              if (rowName.includes('60')) return APP_STATE.products.find(p => p.id === 13);
-              if (rowName.includes('110')) return APP_STATE.products.find(p => p.id === 14);
-              return null;
-            }
-
-            // おいしい氷1kg (他の容量と混同しないよう厳格判定)
-            if (rowName.includes('おいしい氷') && (rowName.includes('1kg') || rowName.includes('1k')) && !rowName.includes('1.1') && !rowName.includes('2kg') && !rowName.includes('3kg') && !rowName.includes('カップ')) {
-              return APP_STATE.products.find(p => p.id === 4);
-            }
-
-            return APP_STATE.products.find(p => {
-              const pNorm = String(p.name || '').normalize('NFKC').replace(/["'¥,\s　]/g, '').toLowerCase();
-              return pNorm === rowName;
-            });
+            return null;
           };
 
           // データ行の解析と日別ケース数の集計
@@ -1865,7 +1826,7 @@
             btnApply.disabled = true;
             previewArea.classList.remove('hidden');
             matchCount.textContent = `0品目 (照合失敗)`;
-            previewList.innerHTML = `<div class="text-rose-600 font-bold py-1">CSV内の品目コードまたは品名を照合できませんでした。ファイル内容をご確認ください。</div>`;
+            previewList.innerHTML = `<div class="text-rose-600 font-bold py-1">CSV内の商品コード（C列）と商品マスタの商品コード（I列）を照合できませんでした。</div>`;
           }
         };
         reader.readAsArrayBuffer(file);

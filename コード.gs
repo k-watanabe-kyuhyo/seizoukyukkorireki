@@ -53,7 +53,13 @@ function apiGetInitialData(year, month) {
       });
     }
 
-    // 商品マスタの読み込み（万が一シートが空でも画面が壊れないフォールバック付き）
+    // デフォルトコードのフォールバック辞書（万が一スプシのI列が空でも安全に稼働）
+    const defaultCodes = {
+      1: 112, 2: 116, 3: 23, 4: 31, 5: 163, 6: 37, 7: 161,
+      8: 52, 9: 74, 10: 159, 11: 160, 12: 169, 13: 170, 14: 171
+    };
+
+    // 商品マスタの読み込み（I列: 商品コードを反映）
     const masterSheet = ss.getSheetByName('商品マスタ');
     const products = [];
     if (masterSheet && masterSheet.getLastRow() > 1) {
@@ -61,9 +67,16 @@ function apiGetInitialData(year, month) {
       for (let i = 1; i < masterValues.length; i++) {
         const row = masterValues[i];
         if (row[0] !== '' && row[0] !== undefined) {
+          const pId = Number(row[0]);
+          // I列（インデックス8）の商品コードを取得。空ならフォールバック辞書から取得
+          let pCode = Number(row[8]);
+          if (!pCode || isNaN(pCode)) {
+            pCode = defaultCodes[pId] || pId;
+          }
+
           products.push({
-            id: Number(row[0]),
-            code: Number(row[0]),
+            id: pId,
+            code: pCode, // ★ スプレッドシートI列の商品コードを正しく連携
             name: String(row[1]),
             spec: String(row[2] || ''),
             target: Number(row[3]) || 0,
@@ -157,10 +170,10 @@ function apiGetInitialData(year, month) {
       }
     }
 
-    // --- 年間計画データの読み込み（全年度対応・日付型自動認識） ---
+    // --- 年間計画データの読み込み ---
     const annualSheet = ss.getSheetByName('年間計画');
     const annualMatrixByYear = {};
-    const annualInitStocksByYear = {}; // 年間計画専用の前月末在庫マップ
+    const annualInitStocksByYear = {};
 
     if (annualSheet && annualSheet.getLastRow() > 1) {
       const annualValues = annualSheet.getDataRange().getValues();
@@ -177,29 +190,19 @@ function apiGetInitialData(year, month) {
             customStock = Number(annualValues[i][8]);
           }
 
-          // 前月末在庫（列7または列8）の読み取り
           let initStk = undefined;
           if (annualValues[i][6] !== undefined && typeof annualValues[i][6] === 'number') {
             initStk = Number(annualValues[i][6]);
           } else if (annualValues[i][7] !== undefined && typeof annualValues[i][7] === 'number') {
             initStk = Number(annualValues[i][7]);
-          } else if (!isNaN(Number(annualValues[i][6])) && annualValues[i][6] !== '') {
-            if (!(annualValues[i][6] instanceof Date)) {
-              initStk = Number(annualValues[i][6]);
-            }
           }
 
           if (!annualMatrixByYear[y]) annualMatrixByYear[y] = {};
-          if (!annualInitStocksByYear[y]) annualInitStocksByYear[y] = {};
+          if (!annualMatrixByYear[y][pId]) annualMatrixByYear[y][pId] = {};
+          annualMatrixByYear[y][pId][m] = { sales: sales, make: make, customStock: customStock };
 
-          if (!annualMatrixByYear[y][pId]) {
-            annualMatrixByYear[y][pId] = {};
-            for (let k = 1; k <= 12; k++) annualMatrixByYear[y][pId][k] = { sales: 0, make: 0, customStock: null };
-          }
-          if (m >= 1 && m <= 12) {
-            annualMatrixByYear[y][pId][m] = { sales: sales, make: make, customStock: customStock };
-          }
-          if (initStk !== undefined && (m === 1 || annualInitStocksByYear[y][pId] === undefined)) {
+          if (initStk !== undefined) {
+            if (!annualInitStocksByYear[y]) annualInitStocksByYear[y] = {};
             annualInitStocksByYear[y][pId] = initStk;
           }
         }
@@ -210,163 +213,208 @@ function apiGetInitialData(year, month) {
       success: true,
       year: year,
       month: month,
-      isRealStockConfirmed: isRealStockConfirmed,
-      realStockMap: realStockMap,
       daysInMonth: daysInMonth,
       products: products,
       matrix: matrix,
-      annualMatrix: annualMatrixByYear[year] || {},
+      realStockMap: realStockMap,
       annualMatrixByYear: annualMatrixByYear,
       annualInitStocksByYear: annualInitStocksByYear
     };
   } catch (err) {
-    return { success: false, message: err.toString() };
+    return { success: false, error: err.toString() };
   }
 }
 
-/** 月別実在庫の一括保存 */
-function apiSaveMonthlyStock(records, year, month) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let stockSheet = ss.getSheetByName('月別月初実在庫') || ss.insertSheet('月別月初実在庫');
-    year = Number(year);
-    month = Number(month);
-    const ymKey = Utilities.formatString('%04d-%02d', year, month);
-
-    const data = stockSheet.getDataRange().getValues();
-    for (let i = data.length - 1; i >= 1; i--) {
-      if (String(data[i][0]).trim() === ymKey) stockSheet.deleteRow(i + 1);
-    }
-
-    const rowsToAdd = [];
-    const now = new Date();
-    records.forEach(r => rowsToAdd.push([ymKey, r.productId, r.productName, r.stock, now]));
-    if (rowsToAdd.length > 0) {
-      stockSheet.getRange(stockSheet.getLastRow() + 1, 1, rowsToAdd.length, 5).setValues(rowsToAdd);
-    }
-    return { success: true, count: rowsToAdd.length };
-  } catch (err) {
-    return { success: false, message: err.toString() };
-  }
-}
-
-/** 製造計画の一括保存 */
+/**
+ * 日別計画保存API
+ */
 function apiSaveDailyPlans(records, year, month) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let planSheet = ss.getSheetByName('日別製造計画') || ss.insertSheet('日別製造計画');
-    year = Number(year);
-    month = Number(month);
+    let planSheet = ss.getSheetByName('日別製造計画');
+    if (!planSheet) {
+      planSheet = ss.insertSheet('日別製造計画');
+      planSheet.appendRow(['年月日(YYYY-MM-DD)', '商品ID', '商品名', '計画製造数(cs)', '最終更新日時']);
+    }
 
-    const data = planSheet.getDataRange().getValues();
-    for (let i = data.length - 1; i >= 1; i--) {
-      const d = new Date(data[i][0]);
-      if (!isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month) {
-        planSheet.deleteRow(i + 1);
+    year = Number(year) || 2026;
+    month = Number(month) || 10;
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+    const existing = planSheet.getDataRange().getValues();
+    const rowsToKeep = [];
+
+    if (existing.length > 0) {
+      rowsToKeep.push(existing[0]);
+      for (let i = 1; i < existing.length; i++) {
+        const d = new Date(existing[i][0]);
+        if (isNaN(d.getTime()) || d.getFullYear() !== year || (d.getMonth() + 1) !== month) {
+          rowsToKeep.push(existing[i]);
+        }
       }
     }
 
-    const rowsToAdd = [];
-    const now = new Date();
-    records.forEach(r => {
-      if (r.make > 0) {
-        const dStr = Utilities.formatDate(new Date(year, month - 1, r.day), 'JST', 'yyyy-MM-dd');
-        rowsToAdd.push([dStr, r.productId, r.productName, r.make, now]);
-      }
-    });
-
-    if (rowsToAdd.length > 0) {
-      planSheet.getRange(planSheet.getLastRow() + 1, 1, rowsToAdd.length, 5).setValues(rowsToAdd);
+    const newRows = [];
+    if (records && records.length > 0) {
+      records.forEach(r => {
+        const dateStr = Utilities.formatString('%04d-%02d-%02d', year, month, Number(r.day));
+        newRows.push([dateStr, Number(r.productId), String(r.productName), Number(r.make), nowStr]);
+      });
     }
-    return { success: true, count: rowsToAdd.length };
+
+    planSheet.clearContents();
+    const allRows = rowsToKeep.concat(newRows);
+    if (allRows.length > 0) {
+      planSheet.getRange(1, 1, allRows.length, allRows[0].length).setValues(allRows);
+    }
+    return { success: true, count: newRows.length };
   } catch (err) {
-    return { success: false, message: err.toString() };
+    return { success: false, error: err.toString() };
   }
 }
 
-/** 出庫実績の一括保存 */
+/**
+ * 出庫実績保存API
+ */
 function apiSaveDailyOuts(records, year, month) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let outSheet = ss.getSheetByName('出庫実績トランザクション') || ss.insertSheet('出庫実績トランザクション');
-    year = Number(year);
-    month = Number(month);
+    let outSheet = ss.getSheetByName('出庫実績トランザクション');
+    if (!outSheet) {
+      outSheet = ss.insertSheet('出庫実績トランザクション');
+      outSheet.appendRow(['出庫年月日(YYYY-MM-DD)', '商品ID', '商品名', '出庫数(cs)', '区分(実績/予定)', '登録日時']);
+    }
 
-    const data = outSheet.getDataRange().getValues();
-    for (let i = data.length - 1; i >= 1; i--) {
-      const d = new Date(data[i][0]);
-      if (!isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month) {
-        outSheet.deleteRow(i + 1);
+    year = Number(year) || 2026;
+    month = Number(month) || 10;
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+    const existing = outSheet.getDataRange().getValues();
+    const rowsToKeep = [];
+
+    if (existing.length > 0) {
+      rowsToKeep.push(existing[0]);
+      for (let i = 1; i < existing.length; i++) {
+        const d = new Date(existing[i][0]);
+        if (isNaN(d.getTime()) || d.getFullYear() !== year || (d.getMonth() + 1) !== month) {
+          rowsToKeep.push(existing[i]);
+        }
       }
     }
 
-    const rowsToAdd = [];
-    const now = new Date();
-    records.forEach(r => {
-      if (r.out > 0) {
-        const dStr = Utilities.formatDate(new Date(year, month - 1, r.day), 'JST', 'yyyy-MM-dd');
-        rowsToAdd.push([dStr, r.productId, r.productName, r.out, '出庫CSV/予定', now]);
-      }
-    });
-
-    if (rowsToAdd.length > 0) {
-      outSheet.getRange(outSheet.getLastRow() + 1, 1, rowsToAdd.length, 6).setValues(rowsToAdd);
+    const newRows = [];
+    if (records && records.length > 0) {
+      records.forEach(r => {
+        const dateStr = Utilities.formatString('%04d-%02d-%02d', year, month, Number(r.day));
+        newRows.push([dateStr, Number(r.productId), String(r.productName), Number(r.out), '出庫CSV取込', nowStr]);
+      });
     }
-    return { success: true, count: rowsToAdd.length };
+
+    outSheet.clearContents();
+    const allRows = rowsToKeep.concat(newRows);
+    if (allRows.length > 0) {
+      outSheet.getRange(1, 1, allRows.length, allRows[0].length).setValues(allRows);
+    }
+    return { success: true, count: newRows.length };
   } catch (err) {
-    return { success: false, message: err.toString() };
+    return { success: false, error: err.toString() };
   }
 }
 
-/** 年間計画の一括保存 */
-function apiSaveAnnualPlan(records, year) {
+/**
+ * 月初実在庫保存API
+ */
+function apiSaveMonthlyStock(records, year, month) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let annualSheet = ss.getSheetByName('年間計画') || ss.insertSheet('年間計画');
-    year = Number(year);
-
-    // ヘッダーが未設定の場合は初期化
-    if (annualSheet.getLastRow() === 0) {
-      annualSheet.appendRow(['年月', '商品ID', '商品名', '販売数', '計画製造数', '月末在庫', '前月末在庫', '更新日時', '手入力実在庫']);
-      annualSheet.getRange(1, 1, 1, 9)
-        .setBackground('#1e1b4b')
-        .setFontColor('#ffffff')
-        .setFontWeight('bold');
+    let stockSheet = ss.getSheetByName('月別月初実在庫');
+    if (!stockSheet) {
+      stockSheet = ss.insertSheet('月別月初実在庫');
+      stockSheet.appendRow(['対象年月(YYYY-MM)', '商品ID', '商品名', '確定実在庫(cs)', '最終更新日時']);
     }
 
-    const data = annualSheet.getDataRange().getValues();
-    // 該当年の古い行を確実に判定して削除（上書き保存）
-    for (let i = data.length - 1; i >= 1; i--) {
-      const parsed = parseYm(data[i][0]);
-      if (parsed && parsed.year === year) {
-        annualSheet.deleteRow(i + 1);
+    year = Number(year) || 2026;
+    month = Number(month) || 10;
+    const ymKey = Utilities.formatString('%04d-%02d', year, month);
+    const nowStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+    const existing = stockSheet.getDataRange().getValues();
+    const rowsToKeep = [];
+
+    if (existing.length > 0) {
+      rowsToKeep.push(existing[0]);
+      for (let i = 1; i < existing.length; i++) {
+        if (String(existing[i][0]).trim() !== ymKey) {
+          rowsToKeep.push(existing[i]);
+        }
       }
     }
 
-    const rowsToAdd = [];
-    const now = new Date();
-    records.forEach(r => {
-      rowsToAdd.push([
-        r.ymKey,
-        r.productId,
-        r.productName,
-        r.sales,
-        r.make,
-        r.stock,
-        (r.annualInitStock !== undefined ? r.annualInitStock : 0),
-        now,
-        (r.customStock !== undefined && r.customStock !== null && r.customStock !== '' ? r.customStock : '')
-      ]);
-    });
-    
-    if (rowsToAdd.length > 0) {
-      const startRow = annualSheet.getLastRow() + 1;
-      const targetRange = annualSheet.getRange(startRow, 1, rowsToAdd.length, 9);
-      targetRange.setNumberFormat('@'); // テキスト書式を強制して自動変換を防止
-      targetRange.setValues(rowsToAdd);
+    const newRows = [];
+    if (records && records.length > 0) {
+      records.forEach(r => {
+        newRows.push([ymKey, Number(r.productId), String(r.productName), Number(r.stock), nowStr]);
+      });
     }
-    return { success: true, count: rowsToAdd.length };
+
+    stockSheet.clearContents();
+    const allRows = rowsToKeep.concat(newRows);
+    if (allRows.length > 0) {
+      stockSheet.getRange(1, 1, allRows.length, allRows[0].length).setValues(allRows);
+    }
+    return { success: true, count: newRows.length };
   } catch (err) {
-    return { success: false, message: err.toString() };
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * 年間計画保存API
+ */
+function apiSaveAnnualPlan(records, year) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let annualSheet = ss.getSheetByName('年間計画');
+    if (!annualSheet) {
+      annualSheet = ss.insertSheet('年間計画');
+      annualSheet.appendRow(['年月', '商品ID', '商品名', '販売計画(cs)', '計画製造数(cs)', '月末在庫(cs)', '前月末在庫', '備考', '手入力在庫']);
+    }
+
+    year = Number(year) || 2026;
+    const existing = annualSheet.getDataRange().getValues();
+    const rowsToKeep = [];
+
+    if (existing.length > 0) {
+      rowsToKeep.push(existing[0]);
+      for (let i = 1; i < existing.length; i++) {
+        const parsed = parseYm(existing[i][0]);
+        if (!parsed || parsed.year !== year) {
+          rowsToKeep.push(existing[i]);
+        }
+      }
+    }
+
+    const newRows = [];
+    if (records && records.length > 0) {
+      records.forEach(r => {
+        newRows.push([
+          String(r.ymKey),
+          Number(r.productId),
+          String(r.productName),
+          Number(r.sales) || 0,
+          Number(r.make) || 0,
+          Number(r.stock) || 0,
+          (r.annualInitStock !== undefined ? Number(r.annualInitStock) : ''),
+          '',
+          (r.customStock !== null && r.customStock !== undefined ? Number(r.customStock) : '')
+        ]);
+      });
+    }
+
+    annualSheet.clearContents();
+    const allRows = rowsToKeep.concat(newRows);
+    if (allRows.length > 0) {
+      annualSheet.getRange(1, 1, allRows.length, allRows[0].length).setValues(allRows);
+    }
+    return { success: true, count: newRows.length };
+  } catch (err) {
+    return { success: false, error: err.toString() };
   }
 }
